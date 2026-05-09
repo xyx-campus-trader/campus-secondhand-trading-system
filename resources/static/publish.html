@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布商品 - 校园二手交易平台</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container nav-container flex items-center justify-between">
+            <a href="xyx_index.html" class="nav-brand">
+                <img src="images/logo.png" style="height:32px; width:32px;" alt="Logo">
+                <span>校园二手</span>
+            </a>
+            <div class="nav-links items-center">
+                <a href="xyx_index.html" class="nav-link">返回首页</a>
+                <div id="auth-links">
+                    <a href="login.html" class="btn btn-primary">登录</a>
+                </div>
+                <div id="user-menu" class="hidden">
+                    <a href="user_center.html" class="nav-link">个人中心</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 800px; padding-top: 2rem; padding-bottom: 2rem;">
+        <h2 class="text-2xl mb-4">发布闲置</h2>
+
+        <div class="card p-4" style="padding: 2rem;">
+            <form id="publishForm">
+
+                <div class="form-group">
+                    <label class="form-label">商品标题</label>
+                    <input type="text" name="title" class="form-input" required placeholder="品牌型号、关键参数">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">商品描述</label>
+                    <textarea name="description" class="form-textarea" rows="5" required
+                        placeholder="购买渠道、使用感受、新旧程度细节..."></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">价格 (¥)</label>
+                        <input type="number" name="price" class="form-input" step="0.01" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">原价 (¥)</label>
+                        <input type="number" name="originalPrice" class="form-input" step="0.01">
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">分类</label>
+                        <select name="categoryId" class="form-select" required>
+                            <option value="">请选择</option>
+                            <option value="1">数码电子</option>
+                            <option value="2">书籍资料</option>
+                            <option value="3">日用百货</option>
+                            <option value="4">运动器材</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">新旧程度</label>
+                        <select name="condition" class="form-select" required>
+                            <option value="0">全新</option>
+                            <option value="1">几乎全新</option>
+                            <option value="2">轻微使用</option>
+                            <option value="3">明显使用</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">交易地点</label>
+                    <input type="text" name="location" class="form-input" required placeholder="例如：东区二食堂门口">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">图片链接 (每行一个)</label>
+                    <textarea name="imagesStr" class="form-textarea" rows="3"
+                        placeholder="http://example.com/image1.jpg&#10;http://example.com/image2.jpg"></textarea>
+                    <p class="text-sm text-secondary mt-2">注：由于未接入实际图片上传服务，请直接粘贴图片公网URL作为演示。</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="isNegotiable" value="true">
+                        <span>支持小刀 (可议价)</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block mt-4" style="height: 48px;">立即发布</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/api.js?v=1.2"></script>
+    <script src="js/utils.js?v=1.1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.checkAuth();
+            if (!TokenManager.getToken()) {
+                Utils.showToast('请先登录', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1000);
+            }
+        });
+
+        document.getElementById('publishForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Process visuals
+            // Backend expects Integer (0/1) for boolean flags based on error message
+            data.isNegotiable = data.isNegotiable ? 1 : 0;
+            // 将图片链接转换为逗号分隔的字符串
+            const imagesArray = data.imagesStr.split('\n').map(s => s.trim()).filter(s => s);
+            data.images = imagesArray.join(',');
+            delete data.imagesStr;
+
+            // Type conversion
+            data.price = parseFloat(data.price);
+            if (data.originalPrice) data.originalPrice = parseFloat(data.originalPrice);
+            data.categoryId = parseInt(data.categoryId);
+            data.condition = parseInt(data.condition);
+
+            if (imagesArray.length === 0) {
+                // If no images, provide default placeholder for demo
+                data.images = 'images/logo.png';
+                data.coverImage = 'images/logo.png';
+            } else {
+                // Backend requires 'coverImage' explicitly
+                data.coverImage = imagesArray[0];
+            }
+
+            // Backend likely requires 'isDelivery' as Integer (0/1), defaulting to 0
+            data.isDelivery = 0;
+
+            // Campus is technically required by API but we can infer from user or add input.
+            // For now let's add it from User's profile if possible or hardcode default
+            const user = TokenManager.getUser();
+            data.campus = user ? user.campus : '东校区';
+
+
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = '发布中...';
+
+            try {
+                await API.publishProduct(data);
+                Utils.showToast('发布成功！', 'success');
+                setTimeout(() => {
+                    window.location.href = 'user_center.html?tab=products';
+                }, 1500);
+            } catch (error) {
+                Utils.showToast('发布失败: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '立即发布';
+            }
+        });
+    </script>
+</body>
+
+</html>
