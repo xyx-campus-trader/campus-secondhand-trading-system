@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 校园二手交易平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #E0F2FE 0%, #F3F4F6 100%);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .auth-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-logo img {
+            width: 64px;
+            height: 64px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth-container">
+        <div class="card auth-card">
+            <div class="auth-logo">
+                <img src="images/logo.png" alt="Logo">
+            </div>
+            <h2 class="text-2xl mb-4" style="text-align: center;">欢迎回来</h2>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" name="username" class="form-input" required placeholder="请输入用户名">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" name="password" class="form-input" required placeholder="请输入密码">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">用户类型</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="userType" value="USER" checked> 普通用户
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="userType" value="ADMIN"> 管理员
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block mt-4">登 录</button>
+            </form>
+
+            <div class="mt-4 text-center text-sm text-secondary">
+                还没有账号？ <a href="register.html" class="text-primary">立即注册</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=1.2"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        // Check dependencies
+        if (typeof API === 'undefined' || typeof Utils === 'undefined' || typeof TokenManager === 'undefined') {
+            alert('系统错误：必要的组件未能加载 (API/Utils)。请检查网络或刷新页面。');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = e.target.querySelector('button');
+            const originalText = btn.textContent;
+
+            try {
+                // 强制清除旧的用户信息，避免权限判断错误
+                TokenManager.removeToken();
+                localStorage.removeItem('user');
+
+                // Collect Data
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                const username = data.username;
+                const password = data.password;
+                const userType = data.userType;
+
+                // 👇 第一步：先根据用户名，判断账号真实类型（前端兜底）
+                // 管理员账号，必须选「管理员」，否则拦截
+                if (username === 'admin') {
+                    if (userType !== 'ADMIN') {
+                        alert('管理员账号请选择「管理员」类型登录！');
+                        return; // 直接拦截，不发请求
+                    }
+                } else {
+                    // 普通用户账号，必须选「普通用户」，否则拦截
+                    if (userType !== 'USER') {
+                        alert('普通用户请选择「普通用户」类型登录！');
+                        return; // 直接拦截，不发请求
+                    }
+                }
+
+                // 👇 第二步：校验通过，再发登录请求
+                const loginData = {
+                    username: username,
+                    password: password,
+                    userType: userType
+                };
+
+                // UI Loading
+                btn.disabled = true;
+                btn.textContent = '登录中...';
+
+                // API Call
+                console.log('Attempting login with:', loginData);
+                const res = await API.login(loginData);
+                console.log('Login Response:', res);
+
+                if (!res) throw new Error('服务器未返回数据');
+
+                // Determine Token
+                let token = null;
+                if (typeof res.data === 'string') {
+                    token = res.data;
+                } else if (res.data && res.data.token) {
+                    token = res.data.token;
+                } else if (res.token) {
+                    token = res.token;
+                }
+
+                if (!token) {
+                    console.error('Token extraction failed. Response:', res);
+                    throw new Error('登录成功，但服务器返回格式异常，无法获取Token。');
+                }
+
+                // Save Token
+                TokenManager.setToken(token);
+
+                // 保存用户信息，确保登录状态能正确显示
+                const user = {
+                    nickname: username, // 使用用户名作为昵称
+                    avatarUrl: '', // 默认头像
+                    role: userType // 使用选择的类型作为角色
+                };
+                TokenManager.setUser(user);
+
+                // Success & Redirect
+                Utils.showToast('登录成功！正在跳转...', 'success');
+
+                // Delay slightly for toast, then force redirect
+                setTimeout(() => {
+                    if (userType === 'ADMIN') {
+                        console.log('Redirecting to xyx_admin.html...');
+                        window.location.href = 'xyx_admin.html';
+                    } else {
+                        console.log('Redirecting to index.html...');
+                        window.location.href = 'xyx_index.html';
+                    }
+                }, 500);
+
+            } catch (error) {
+                console.error('Login Error:', error);
+                const msg = error.message || '登录请求失败，请检查网络';
+                Utils.showToast(msg, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+    </script>
+</body>
+
+</html>

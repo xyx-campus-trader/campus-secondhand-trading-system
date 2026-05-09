@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XYX校园闲置交易平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Home Specific Styles */
+        .banner-container {
+            margin-top: 1.5rem;
+            position: relative;
+            height: 450px;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            background-color: #e5e7eb;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .banner-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: all 0.8s ease-in-out;
+            background-size: cover;
+            background-position: center;
+            transform: scale(1.05);
+        }
+
+        .banner-slide.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .banner-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 3rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            z-index: 10;
+        }
+
+        .banner-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .banner-subtitle {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            animation: slideInUp 1s ease-out;
+        }
+
+        .banner-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background-color: var(--primary);
+            color: white;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            animation: slideInUp 1.2s ease-out;
+        }
+
+        .banner-button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .banner-controls {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 20;
+        }
+
+        .banner-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .banner-dot.active {
+            background-color: white;
+            transform: scale(1.4);
+            border-color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+
+        .banner-arrows {
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            right: 1rem;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .banner-arrow {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            pointer-events: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .banner-arrow:hover {
+            background-color: rgba(59, 130, 246, 0.9);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .banner-arrow i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding: 1.5rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-light) var(--bg-secondary);
+        }
+
+        .category-tabs::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .category-tabs::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 3px;
+        }
+
+        .category-tabs::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 3px;
+        }
+
+        .category-tabs::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        .category-tab {
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+        }
+
+        .category-tab.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .category-tab:hover {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .product-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+            border-color: var(--primary-light);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-image {
+            transform: scale(1.05);
+        }
+
+        .product-image-container {
+            overflow: hidden;
+            height: 220px;
+        }
+
+        .product-info {
+            padding: 1.25rem;
+        }
+
+        .product-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+            height: 48px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--danger);
+            margin-bottom: 0.75rem;
+        }
+
+        .product-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-seller {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .filters-section {
+            background-color: white;
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: block;
+            color: var(--text-primary);
+        }
+
+        .price-inputs {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        .price-inputs input {
+            flex: 1;
+        }
+
+        .price-inputs .btn {
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .sort-options {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            align-items: center;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .sort-options .filter-label {
+            margin-bottom: 0;
+            margin-right: 0.5rem;
+        }
+
+        .sort-btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: var(--radius-md);
+            background-color: white;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .sort-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .sort-btn:hover:not(.active) {
+            border-color: var(--primary-light);
+            color: var(--primary);
+            background-color: var(--bg-secondary);
+        }
+
+        .reset-btn {
+            margin-left: auto;
+            padding: 0.6rem 1.25rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .reset-btn:hover {
+            background-color: var(--border);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .page-btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-md);
+            background-color: white;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .page-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .page-btn:hover:not(.active):not(:disabled) {
+            border-color: var(--primary-light);
+            color: var(--primary);
+            background-color: var(--bg-secondary);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: var(--bg-secondary);
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background-color: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            min-width: 180px;
+            z-index: 1000;
+        }
+
+        .user-menu-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .user-menu-item:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .user-menu-item.divider {
+            border-top: 1px solid var(--border);
+            margin: 0.5rem 0;
+        }
+
+        /* Header Styles */
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo span {
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+
+        .nav-search {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 2rem;
+        }
+
+        .nav-search .form-input {
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius-full);
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .nav-search .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+            border-radius: 1px;
+        }
+
+        #auth-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        #auth-links .btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        #auth-links .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: 1px solid var(--primary);
+        }
+
+        #auth-links .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        #auth-links .btn-secondary {
+            background-color: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        #auth-links .btn-secondary:hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        #user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #user-menu .username {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        #admin-link {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        #admin-link:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        #user-menu button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        #user-menu button:hover {
+            color: var(--danger);
+        }
+
+        .nav-search-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .nav-search-input {
+            padding: 8px 100px 8px 10px;
+            width: 300px;
+            height: 38px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .ai-search-btn {
+            position: absolute;
+            right: 50px;
+            top: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid rgba(255,255,255,0.8);
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            height: 28px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .ai-search-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .ai-search-btn.active {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 0 2px 12px rgba(56, 239, 125, 0.5);
+            border-color: rgba(255,255,255,1);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            height: 28px;
+            padding: 0 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .search-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        #suggestBox {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            display: none;
+            z-index: 999;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        #suggestBox .suggest-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        #suggestBox .suggest-item:last-child {
+            border-bottom: none;
+        }
+
+        #suggestBox .suggest-item:hover {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="xyx_index.html" class="logo">
+                    <span>XYX闲置</span>
+                </a>
+
+                <div class="nav-search-container">
+                    <input type="text" id="searchInput" class="nav-search-input" placeholder="搜索商品...">
+                    <button id="aiSearchToggle" class="ai-search-btn" title="开启AI智能搜索">AI搜索</button>
+                    <button onclick="searchProduct()" class="search-btn">搜索</button>
+                    <div id="suggestBox"></div>
+                </div>
+
+                <div class="nav-links items-center">
+                    <a href="xyx_index.html" class="nav-link active">首页</a>
+                    <a href="publish.html" class="nav-link">发布闲置</a>
+
+                    <div id="auth-links">
+                        <a href="login.html" class="btn btn-primary">登录</a>
+                        <a href="register.html" class="btn btn-secondary" style="margin-left: 0.5rem;">注册</a>
+                    </div>
+
+                    <div id="user-menu" class="hidden flex items-center gap-2" style="cursor: pointer;">
+                        <a href="user_center.html" class="flex items-center gap-2">
+                            <img src="images/logo.png" style="width:32px; height:32px; border-radius:50%; background:#eee;" alt="Avatar">
+                            <span class="username text-sm font-weight-bold">用户</span>
+                        </a>
+                        <a href="xyx_admin.html" id="admin-link" class="btn btn-secondary hidden" style="margin-left: 0.5rem;">控制台</a>
+                        <a href="chat.html" class="btn btn-secondary" style="margin-left: 0.5rem;">AI客服</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Banner Carousel -->
+        <div id="bannerContainer" class="banner-container">
+            <!-- Banner slides will be inserted here -->
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="category-tabs">
+            <div class="category-tab active" data-category="">全部</div>
+            <div class="category-tab" data-category="1">数码电子</div>
+            <div class="category-tab" data-category="2">书籍资料</div>
+            <div class="category-tab" data-category="3">日用百货</div>
+            <div class="category-tab" data-category="4">运动器材</div>
+            <div class="category-tab" data-category="5">服饰鞋包</div>
+            <div class="category-tab" data-category="6">美妆护肤</div>
+            <div class="category-tab" data-category="7">虚拟商品</div>
+            <div class="category-tab" data-category="8">其他</div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="section fade-in-up">
+            <h3 class="section-title">筛选条件</h3>
+            <div id="filtersArea" class="filters-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label class="filter-label">校区</label>
+                        <select id="campusFilter" class="form-select" title="选择校区">
+                            <option value="">全部校区</option>
+                            <option value="东校区">东校区</option>
+                            <option value="西校区">西校区</option>
+                            <option value="南校区">南校区</option>
+                            <option value="北校区">北校区</option>
+                            <option value="虚拟商品">虚拟商品</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">成色</label>
+                        <select id="conditionFilter" class="form-select" title="选择成色">
+                            <option value="">全部</option>
+                            <option value="0">全新</option>
+                            <option value="1">几乎全新</option>
+                            <option value="2">有使用痕迹</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group" style="flex: 2;">
+                        <label class="filter-label">价格区间</label>
+                        <div class="price-inputs">
+                            <input type="number" id="minPrice" class="form-input" placeholder="￥最小值" min="0">
+                            <input type="number" id="maxPrice" class="form-input" placeholder="￥最大值" min="0">
+                            <button id="priceFilterBtn" class="btn btn-primary">确定</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sort-options">
+                    <span class="filter-label" style="margin-top: 0;">排序：</span>
+                    <button class="sort-btn active" data-sort="" data-order="">综合推荐</button>
+                    <button class="sort-btn" data-sort="createTime" data-order="desc">最新发布</button>
+                    <button class="sort-btn" data-sort="price" data-order="asc">价格最低</button>
+                    <button class="sort-btn" data-sort="price" data-order="desc">价格最高</button>
+                    <button class="reset-btn" onclick="resetFilters()">重置全部</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="section fade-in-up">
+            <h3 class="section-title">AI智能推荐</h3>
+            <div id="aiRecommendGrid" class="product-grid">
+                <!-- AI推荐商品将插入这里 -->
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="section fade-in-up">
+            <h3 class="section-title">最新发布</h3>
+            <div id="productGrid" class="product-grid">
+                <!-- Products will be inserted here -->
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="pagination">
+                <!-- Pagination buttons will be inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>关于我们</h3>
+                    <p>XYX校园闲置交易平台致力于为大学生提供一个安全、便捷的闲置物品交易平台，让闲置资源得到合理利用。</p>
+                </div>
+                <div class="footer-column">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="xyx_index.html">首页</a></li>
+                        <li><a href="publish.html">发布闲置</a></li>
+                        <li><a href="user_center.html">个人中心</a></li>
+                        <li><a href="xyx_admin.html" id="footer-admin-link" class="hidden">管理后台</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>联系我们</h3>
+                    <p>邮箱：contact@xyx-trade.com</p>
+                    <p>电话：123-4567-8910</p>
+                    <p>地址：某大学科技园</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 XYX校园闲置交易平台 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
+
+    <script src="js/api.js?v=1.2"></script>
+    <script src="js/utils.js?v=2.0"></script>
+    <script>
+        // State
+        let currentPage = 1;
+        const pageSize = 12;
+        let currentCategory = '';
+        let currentKeyword = '';
+        let currentCampus = '';
+        let currentCondition = '';
+        let minPrice = '';
+        let maxPrice = '';
+        let currentSortBy = '';
+        let currentOrder = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.checkAuth();
+            loadBanners();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const keywordParam = urlParams.get('keyword');
+            const categoryParam = urlParams.get('category');
+            
+            // 重置所有分类标签的激活状态，默认选中"全部"
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector('.category-tab[data-category=""]').classList.add('active');
+            
+            if (keywordParam) {
+                currentKeyword = keywordParam;
+                document.getElementById('searchInput').value = keywordParam;
+            }
+            
+            if (categoryParam) {
+                // URL参数用于查询，但不改变分类高亮（让用户自己点击分类）
+                loadProducts();
+            } else {
+                loadProducts();
+            }
+
+            loadAiRecommend();
+            setupSearchAndFilters();
+            checkAdminAccess();
+            initAiSearch();
+
+            if (currentCategory || currentKeyword || currentCampus || currentCondition || minPrice || maxPrice) {
+                setTimeout(() => {
+                    document.getElementById('filtersArea').scrollIntoView({ behavior: 'smooth' });
+                }, 800);
+            }
+        });
+
+        // AI Search Functions
+        let isAiSearch = false;
+        let searchTimer = null;
+
+        function initAiSearch() {
+            const aiToggle = document.getElementById('aiSearchToggle');
+            const searchInput = document.getElementById('searchInput');
+            const suggestBox = document.getElementById('suggestBox');
+
+            aiToggle.addEventListener('click', function() {
+                isAiSearch = !isAiSearch;
+                if (isAiSearch) {
+                    this.classList.add('active');
+                    this.textContent = 'AI搜索(开)';
+                    alert('已开启AI智能搜索，输入关键词会自动为您推荐相关商品！');
+                } else {
+                    this.classList.remove('active');
+                    this.textContent = 'AI搜索';
+                    suggestBox.style.display = 'none';
+                }
+            });
+
+            searchInput.addEventListener('input', function() {
+                const keyword = this.value.trim();
+                if (keyword.length < 1 || !isAiSearch) {
+                    suggestBox.style.display = 'none';
+                    return;
+                }
+
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(async () => {
+                    try {
+                        const res = await API.aiSearchSuggest(keyword);
+                        if (res.code === 200 && res.data && res.data.length > 0) {
+                            suggestBox.innerHTML = res.data.map(item =>
+                                `<div class="suggest-item" onclick="selectSuggest('${item.replace(/'/g, "\\'")}')">${item}</div>`
+                            ).join('');
+                            suggestBox.style.display = 'block';
+                        } else {
+                            suggestBox.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error('AI search error:', e);
+                        suggestBox.style.display = 'none';
+                    }
+                }, 300);
+            });
+
+            searchInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    suggestBox.style.display = 'none';
+                }, 200);
+            });
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchProduct();
+                }
+            });
+        }
+
+        function selectSuggest(title) {
+            document.getElementById('searchInput').value = title;
+            document.getElementById('suggestBox').style.display = 'none';
+            searchProduct();
+        }
+
+        function searchProduct() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            if (keyword) {
+                window.location.href = 'xyx_index.html?keyword=' + encodeURIComponent(keyword);
+            }
+        }
+
+        async function checkAdminAccess() {
+            try {
+                const userInfo = await API.getUserInfo();
+                if (userInfo.code === 200 && userInfo.data) {
+                    const userData = userInfo.data;
+                    if (userData.role === 'ADMIN') {
+                        const adminLink = document.getElementById('admin-link');
+                        if (adminLink) {
+                            adminLink.classList.remove('hidden');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Not logged in or not admin');
+            }
+        }
+
+        // Banners (Carousel)
+        let currentBannerIndex = 0;
+        let bannerInterval;
+
+        function switchBanner(index) {
+            const slides = document.querySelectorAll('.banner-slide');
+            const dots = document.querySelectorAll('.banner-dot');
+            
+            if (index >= slides.length) index = 0;
+            if (index < 0) index = slides.length - 1;
+            
+            slides.forEach((slide, i) => {
+                slide.classList.remove('active');
+                dots[i].classList.remove('active');
+            });
+            
+            slides[index].classList.add('active');
+            dots[index].classList.add('active');
+            currentBannerIndex = index;
+        }
+
+        function startBannerAutoPlay(count) {
+            if (bannerInterval) clearInterval(bannerInterval);
+            if (count <= 1) return;
+            bannerInterval = setInterval(() => {
+                switchBanner(currentBannerIndex + 1);
+            }, 5000);
+        }
+
+        async function loadBanners() {
+            const container = document.getElementById('bannerContainer');
+
+            try {
+                let banners = [];
+                // Try to get banners from API
+                try {
+                    const res = await API.getBanners(5);
+                    banners = res.data || [];
+                    // 如果 API 返回空数组，也使用 Fallback
+                    if (!banners || banners.length === 0) {
+                        throw new Error('Empty banners');
+                    }
+                } catch (e) {
+                    console.log('Banner API failed or returned empty, using fallback');
+                    // Fallback banners - 使用 picsum.photos 生成图片，seed 固定
+                    banners = [
+                        { id: 1, title: '毕业季闲置特卖', subtitle: '全场低至5折，快来捡漏！', linkUrl: 'xyx_index.html?keyword=毕业' },
+                        { id: 2, title: '数码产品专场', subtitle: '手机电脑平板应有尽有', linkUrl: 'xyx_index.html?category=1' },
+                        { id: 3, title: '书籍资料大甩卖', subtitle: '考研考证教材一站式购齐', linkUrl: 'xyx_index.html?category=2' },
+                        { id: 4, title: '运动器材专场', subtitle: '健身球类户外装备', linkUrl: 'xyx_index.html?category=4' },
+                        { id: 5, title: '日用百货清仓', subtitle: '生活用品应有尽有', linkUrl: 'xyx_index.html?category=3' }
+                    ];
+                }
+
+                if (banners.length === 0) {
+                    container.innerHTML = '<div class="text-center p-8 text-secondary">暂无轮播图</div>';
+                    return;
+                }
+
+                // Clear existing content
+                container.innerHTML = '';
+
+                // Create arrows
+                const arrowsContainer = document.createElement('div');
+                arrowsContainer.className = 'banner-arrows';
+                arrowsContainer.innerHTML = `
+                    <div class="banner-arrow" onclick="switchBanner(currentBannerIndex - 1)">
+                        <span style="font-size: 1.5rem; color: white;">&lt;</span>
+                    </div>
+                    <div class="banner-arrow" onclick="switchBanner(currentBannerIndex + 1)">
+                        <span style="font-size: 1.5rem; color: white;">&gt;</span>
+                    </div>
+                `;
+                container.appendChild(arrowsContainer);
+
+                // Create slides
+                banners.forEach((b, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = `banner-slide ${index === 0 ? 'active' : ''}`;
+                    
+                    // 使用渐变背景色，根据标题主题匹配不同颜色
+                    const bannerTitle = b.title || 'Campus Market';
+                    const gradients = [
+                        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',      // 紫蓝
+                        'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',      // 青绿
+                        'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)',      // 橙黄
+                        'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)',      // 蓝青
+                        'linear-gradient(135deg, #ee0979 0%, #ff6a00 100%)'       // 粉红
+                    ];
+                    const gradientIndex = (b.id - 1) % gradients.length;
+                    slide.style.background = gradients[gradientIndex];
+
+                    // 轮播图点击跳转处理
+                    let linkHref = b.linkUrl || '#';
+                    let linkText = '立即查看';
+                    
+                    // 处理内部跳转链接
+                    if (linkHref && linkHref.startsWith('/product/list')) {
+                        // 如果是内部商品列表链接，转换为前端页面
+                        const params = linkHref.split('?')[1] || '';
+                        linkHref = 'xyx_index.html' + (params ? '?' + params : '');
+                    } else if (linkHref && linkHref.startsWith('/category/')) {
+                        // 如果是分类链接
+                        const categoryId = linkHref.split('/category/')[1];
+                        linkHref = 'xyx_index.html?category=' + categoryId;
+                    }
+                    
+                    const contentHtml = `
+                        <div class="banner-content">
+                            <h2 class="banner-title">${b.title || ''}</h2>
+                            <p class="banner-subtitle">${b.subtitle || b.description || ''}</p>
+                            <a href="#" class="banner-button" data-link="${linkHref}">${linkText}</a>
+                        </div>
+                    `;
+
+                    slide.innerHTML = contentHtml;
+                    container.appendChild(slide);
+                });
+
+                // Create dots
+                const dotsContainer = document.createElement('div');
+                dotsContainer.className = 'banner-controls';
+                
+                banners.forEach((b, index) => {
+                    const dot = document.createElement('div');
+                    dot.className = `banner-dot ${index === 0 ? 'active' : ''}`;
+                    dot.onclick = () => switchBanner(index);
+                    dotsContainer.appendChild(dot);
+                });
+                
+                container.appendChild(dotsContainer);
+
+                // Auto Play
+                startBannerAutoPlay(banners.length);
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="text-center p-8 text-secondary">轮播图加载失败</div>';
+            }
+        }
+
+        // 轮播图按钮点击事件委托
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.banner-button');
+            if (btn && btn.dataset.link) {
+                e.preventDefault();
+                const link = btn.dataset.link;
+                if (link === '#' || link === '') {
+                    alert('该轮播图暂无跳转链接');
+                } else {
+                    window.location.href = link;
+                }
+            }
+        });
+
+        // AI Recommend
+        async function loadAiRecommend() {
+            const container = document.getElementById('aiRecommendGrid');
+            container.innerHTML = '<p class="text-secondary">加载中...</p>';
+
+            try {
+                const res = await API.getAiRecommend();
+                const list = (res.data && res.data.list) ? res.data.list : [];
+
+                if (list.length === 0) {
+                    container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">暂无推荐商品</p>';
+                    return;
+                }
+
+                container.innerHTML = list.map(p => {
+                    // 优先使用数据库图片，没有则根据标题关键词+ID匹配不同图片
+                    const productTitle = p.title || 'Product';
+                    let coverImage;
+                    if (p.coverImage) {
+                        coverImage = Utils.getImgUrl(p.coverImage);
+                    } else {
+                        const title = productTitle.toLowerCase();
+                        const productId = p.id || Math.random().toString(36).substr(2, 9);
+                        let theme = 'product';
+                        if (title.includes('笔记本') || title.includes('电脑') || title.includes('mac') || title.includes('联想')) {
+                            theme = 'laptop';
+                        } else if (title.includes('iphone') || title.includes('手机') || title.includes('华为') || title.includes('小米')) {
+                            theme = 'smartphone';
+                        } else if (title.includes('平板') || title.includes('ipad')) {
+                            theme = 'tablet';
+                        } else if (title.includes('耳机') || title.includes('airpods') || title.includes('音箱')) {
+                            theme = 'headphones';
+                        } else if (title.includes('书') || title.includes('教材') || title.includes('考研') || title.includes('英语')) {
+                            theme = 'books';
+                        } else if (title.includes('运动') || title.includes('球') || title.includes('健身')) {
+                            theme = 'sports';
+                        } else if (title.includes('自行车') || title.includes('车')) {
+                            theme = 'bicycle';
+                        } else if (title.includes('衣服') || title.includes('鞋') || title.includes('包') || title.includes('瑜伽') || title.includes('连衣裙')) {
+                            theme = 'fashion';
+                        } else if (title.includes('宿舍') || title.includes('台灯') || title.includes('收纳')) {
+                            theme = 'dormitory';
+                        }
+                        coverImage = `https://picsum.photos/seed/${theme}${productId}/400/300`;
+                    }
+                    return `
+                    <div class="product-card">
+                        <a href="product_detail.html?id=${p.id}" style="text-decoration: none; color: inherit;">
+                            <div class="product-image-container">
+                                <img src="${coverImage}" alt="${productTitle}" class="product-image">
+                            </div>
+                            <div class="product-info">
+                                <h4 class="product-title">${productTitle}</h4>
+                                <div class="product-price">${Utils.formatPrice(p.price)}</div>
+                                <div class="product-meta">
+                                    <span>${p.campus || '未知校区'}</span>
+                                    <span>${p.viewCount || 0}浏览</span>
+                                </div>
+                                ${p.sellerNickname ? `<div class="product-seller">卖家: ${p.sellerNickname}</div>` : ''}
+                            </div>
+                        </a>
+                    </div>
+                `}).join('');
+
+            } catch (e) {
+                console.error('Failed to load AI recommend:', e);
+                container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">推荐加载失败</p>';
+            }
+        }
+
+        // Products
+        async function loadProducts(page = 1) {
+            currentPage = page;
+            const container = document.getElementById('productGrid');
+            const paginationEl = document.getElementById('pagination');
+
+            // Scroll to top of grid
+            if (page > 1) {
+                document.querySelector('.filters-section').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            container.innerHTML = '<p class="text-secondary">加载中...</p>';
+
+            const params = {
+                pageNum: currentPage,
+                pageSize: pageSize
+            };
+            if (currentCategory) params.categoryId = currentCategory;
+            if (currentKeyword) params.keyword = currentKeyword;
+            if (currentCampus) params.campus = currentCampus;
+            if (currentCondition !== '') params.condition = parseInt(currentCondition);
+            if (minPrice) params.minPrice = minPrice;
+            if (maxPrice) params.maxPrice = maxPrice;
+            if (currentSortBy) params.sortBy = currentSortBy;
+            if (currentOrder) params.order = currentOrder;
+
+            try {
+                const res = await API.getProductList(params);
+                const list = (res.data && res.data.list) ? res.data.list : [];
+                const total = (res.data && res.data.total) ? res.data.total : 0;
+
+                if (list.length === 0) {
+                    container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">暂无商品</p>';
+                    paginationEl.innerHTML = '';
+                    return;
+                }
+
+                // Render products
+                container.innerHTML = list.map(p => {
+                    // 优先使用数据库图片，没有则根据标题关键词+ID匹配不同图片
+                    const productTitle = p.title || 'Product';
+                    let coverImage;
+                    if (p.coverImage) {
+                        coverImage = Utils.getImgUrl(p.coverImage);
+                    } else {
+                        const title = productTitle.toLowerCase();
+                        const productId = p.id || Math.random().toString(36).substr(2, 9);
+                        let theme = 'product';
+                        if (title.includes('笔记本') || title.includes('电脑') || title.includes('mac') || title.includes('联想')) {
+                            theme = 'laptop';
+                        } else if (title.includes('iphone') || title.includes('手机') || title.includes('华为') || title.includes('小米')) {
+                            theme = 'smartphone';
+                        } else if (title.includes('平板') || title.includes('ipad')) {
+                            theme = 'tablet';
+                        } else if (title.includes('耳机') || title.includes('airpods') || title.includes('音箱')) {
+                            theme = 'headphones';
+                        } else if (title.includes('书') || title.includes('教材') || title.includes('考研') || title.includes('英语')) {
+                            theme = 'books';
+                        } else if (title.includes('运动') || title.includes('球') || title.includes('健身')) {
+                            theme = 'sports';
+                        } else if (title.includes('自行车') || title.includes('车')) {
+                            theme = 'bicycle';
+                        } else if (title.includes('衣服') || title.includes('鞋') || title.includes('包') || title.includes('瑜伽') || title.includes('连衣裙')) {
+                            theme = 'fashion';
+                        } else if (title.includes('宿舍') || title.includes('台灯') || title.includes('收纳')) {
+                            theme = 'dormitory';
+                        }
+                        coverImage = `https://picsum.photos/seed/${theme}${productId}/400/300`;
+                    }
+                    return `
+                    <div class="product-card">
+                        <a href="product_detail.html?id=${p.id}" style="text-decoration: none; color: inherit;">
+                            <div class="product-image-container">
+                                <img src="${coverImage}" alt="${productTitle}" class="product-image">
+                            </div>
+                            <div class="product-info">
+                                <h4 class="product-title">${productTitle}</h4>
+                                <div class="product-price">${Utils.formatPrice(p.price)}</div>
+                                <div class="product-meta">
+                                    <span>${p.campus || '未知校区'}</span>
+                                    <span>${p.viewCount || 0}浏览</span>
+                                </div>
+                                ${p.sellerNickname ? `<div class="product-seller">卖家: ${p.sellerNickname}</div>` : ''}
+                            </div>
+                        </a>
+                    </div>
+                `}).join('');
+
+                // Render pagination
+                renderPagination(total);
+
+            } catch (e) {
+                console.error('Failed to load products:', e);
+                container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">加载失败，请刷新重试</p>';
+                paginationEl.innerHTML = '';
+            }
+        }
+
+        function renderPagination(total) {
+            const paginationEl = document.getElementById('pagination');
+            const totalPages = Math.ceil(total / pageSize);
+
+            if (totalPages <= 1) {
+                paginationEl.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Previous button
+            html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="loadProducts(${currentPage - 1})">&laquo; 上一页</button>`;
+
+            // Page buttons
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadProducts(${i})"><strong>${i}</strong></button>`;
+            }
+
+            // Next button
+            html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="loadProducts(${currentPage + 1})">&raquo; 下一页</button>`;
+
+            paginationEl.innerHTML = html;
+        }
+
+        function setupSearchAndFilters() {
+            // Search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    currentKeyword = searchInput.value.trim();
+                    currentPage = 1;
+                    loadProducts();
+                }
+            });
+
+            // Category tabs
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentCategory = tab.dataset.category;
+                    currentPage = 1;
+                    loadProducts();
+                });
+            });
+
+            // Campus filter
+            document.getElementById('campusFilter').addEventListener('change', (e) => {
+                currentCampus = e.target.value;
+                currentPage = 1;
+                loadProducts();
+            });
+
+            // Condition filter
+            document.getElementById('conditionFilter').addEventListener('change', (e) => {
+                currentCondition = e.target.value;
+                currentPage = 1;
+                loadProducts();
+            });
+
+            // Price filter
+            document.getElementById('priceFilterBtn').addEventListener('click', () => {
+                minPrice = document.getElementById('minPrice').value;
+                maxPrice = document.getElementById('maxPrice').value;
+                currentPage = 1;
+                loadProducts();
+            });
+
+            // Sort buttons
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                if (btn.dataset.sort === undefined) return;
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentSortBy = btn.dataset.sort;
+                    currentOrder = btn.dataset.order;
+                    currentPage = 1;
+                    loadProducts();
+                });
+            });
+        }
+
+        function resetFilters() {
+            // Reset form values
+            document.getElementById('searchInput').value = '';
+            document.getElementById('campusFilter').value = '';
+            document.getElementById('conditionFilter').value = '';
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+            document.querySelectorAll('.sort-btn[data-sort]').forEach(b => b.classList.remove('active'));
+            document.querySelector('.sort-btn[data-sort=""]').classList.add('active');
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.category-tab[data-category=""]').classList.add('active');
+
+            // Reset state
+            currentCategory = '';
+            currentKeyword = '';
+            currentCampus = '';
+            currentCondition = '';
+            minPrice = '';
+            maxPrice = '';
+            currentSortBy = '';
+            currentOrder = '';
+            currentPage = 1;
+
+            loadProducts();
+        }
+    </script>
+</body>
+
+</html>
