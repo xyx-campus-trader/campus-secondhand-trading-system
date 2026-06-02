@@ -55,6 +55,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 3. 保存订单（使用 MP 的 insert）
         baseMapper.insert(order);
 
+        // 4. 锁定商品为已售出状态，防止其他用户重复下单
+        int locked = productMapper.updateStatusCAS(order.getProductId(), 1, 2);
+        if (locked == 0) {
+            throw new ServiceException("商品已被其他用户下单");
+        }
+
         return order.getId();
     }
 
@@ -119,19 +125,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new ServiceException("无权操作此订单");
         }
 
-        // 只有非终态订单（非已完成、非已取消）才能操作
-        if (order.getStatus() == 3 || order.getStatus() == 4) {
+        // CAS 更新：仅当状态为 1 (待发货) 或 2 (待收货) 时才能变更为 3 (已完成)
+        int rows = baseMapper.completeOrder(orderId, 3);
+        if (rows == 0) {
             throw new ServiceException("订单当前状态不可确认收货");
         }
-
-        // 修改订单为已完成状态
-        int rows = baseMapper.completeOrder(orderId, 3);
-        if (rows > 0) {
-            // 核心逻辑：订单完成意味着商品物理权属转移，将商品标记为"已售出"
-            productMapper.updateStatus(order.getProductId(), 2);
-            return true;
-        }
-        return false;
+        return true;
     }
 
     /**
@@ -156,12 +155,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!order.getBuyerId().equals(userId)) {
             throw new ServiceException("无权操作此订单");
         }
-        if (order.getStatus() != 0) {
+
+        // CAS 更新：仅当前状态为 0 (待付款) 时才能变更为 1 (待发货)
+        int rows = baseMapper.payOrder(orderId, 1);
+        if (rows == 0) {
             throw new ServiceException("订单当前状态不可支付");
         }
-
-        // 模拟支付成功逻辑：状态变更为 1:待发货
-        return baseMapper.payOrder(orderId, 1) > 0;
+        return true;
     }
 
     /**
@@ -193,7 +193,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new ServiceException("当前订单状态不允许取消");
         }
 
-        return baseMapper.cancelOrder(orderId, reason) > 0;
+        int rows = baseMapper.cancelOrder(orderId, reason);
+        if (rows > 0) {
+            // 恢复商品为上架状态
+            productMapper.updateStatusCAS(order.getProductId(), 2, 1);
+        }
+        return rows > 0;
     }
 
     /**

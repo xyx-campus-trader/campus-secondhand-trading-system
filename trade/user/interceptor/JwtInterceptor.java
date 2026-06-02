@@ -27,6 +27,9 @@ public class JwtInterceptor implements HandlerInterceptor {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private com.xyx.trade.user.service.TokenBlacklistService tokenBlacklistService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
@@ -58,6 +61,15 @@ public class JwtInterceptor implements HandlerInterceptor {
             response.setContentType("application/json;charset=utf-8");
             response.setStatus(401);
             response.getWriter().write(new ObjectMapper().writeValueAsString(AjaxResult.error(401, "token 无效或已过期")));
+            return false;
+        }
+
+        // 检查 Token 是否已被登出（黑名单）
+        if (tokenBlacklistService.isBlacklisted(token)) {
+            log.warn("Token已被登出");
+            response.setContentType("application/json;charset=utf-8");
+            response.setStatus(401);
+            response.getWriter().write(new ObjectMapper().writeValueAsString(AjaxResult.error(401, "token 已失效，请重新登录")));
             return false;
         }
 

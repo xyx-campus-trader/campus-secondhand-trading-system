@@ -24,6 +24,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     private static final String PRODUCT_INFO_PREFIX = "product:info:";
     private static final String PRODUCT_LIST_PREFIX = "product:list:";
+    private static final String LIST_KEYS_INDEX = "product:list:index";
 
     @Override
     public Long createProduct(Product product) {
@@ -34,9 +35,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     public boolean updateProduct(Product product) {
         boolean rows = baseMapper.updateById(product) > 0;
         if (rows) {
-            // 更新成功 → 删除缓存
+            // 更新成功 → 删除商品信息缓存
             String key = PRODUCT_INFO_PREFIX + product.getId();
             redisTemplate.delete(key);
+            // 精确清除列表缓存索引
+            clearListCacheIndex();
         }
         return rows;
     }
@@ -45,9 +48,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     public boolean deleteProduct(Long id) {
         boolean rows = baseMapper.deleteById(id) > 0;
         if (rows) {
-            // 删除成功 → 删除缓存
+            // 删除成功 → 删除商品信息缓存
             String key = PRODUCT_INFO_PREFIX + id;
             redisTemplate.delete(key);
+            // 精确清除列表缓存索引
+            clearListCacheIndex();
         }
         return rows;
     }
@@ -183,8 +188,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         result.put("pageNum", pageNum);
         result.put("pageSize", pageSize);
 
-        // 2. 存入 Redis，30分钟过期
+        // 2. 存入 Redis，30分钟过期；同时维护缓存索引以便精确清除
         redisTemplate.opsForValue().set(key, result, 30, TimeUnit.MINUTES);
+        redisTemplate.opsForSet().add(LIST_KEYS_INDEX, key);
+        redisTemplate.expire(LIST_KEYS_INDEX, 30, TimeUnit.MINUTES);
 
         return result;
     }
@@ -250,23 +257,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setStatus(status);
         boolean result = baseMapper.updateById(product) > 0;
         if (result) {
-            // 清除商品信息缓存
+            // 清除商品信息缓存（精确删Key）
             String infoKey = PRODUCT_INFO_PREFIX + id;
             redisTemplate.delete(infoKey);
-            // 清除商品列表缓存（前台列表）
-            try {
-                Set<String> listKeys = redisTemplate.keys(PRODUCT_LIST_PREFIX + "*");
-                if (listKeys != null && !listKeys.isEmpty()) {
-                    redisTemplate.delete(listKeys);
-                }
-                // 清除管理后台商品列表缓存（admin:product:list:*）
-                Set<String> adminKeys = redisTemplate.keys("admin:product:list:*");
-                if (adminKeys != null && !adminKeys.isEmpty()) {
-                    redisTemplate.delete(adminKeys);
-                }
-            } catch (Exception e) {
-                // 缓存清除失败不影响主业务
-            }
+            // 精确清除列表缓存索引
+            clearListCacheIndex();
         }
         return result;
     }
@@ -333,5 +328,20 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         wrapper.orderByDesc(Product::getCreateTime);
         wrapper.last("limit 20");
         return baseMapper.selectList(wrapper);
+    }
+
+    /**
+     * 通过缓存索引精确清除所有商品列表缓存，替代 KEYS 命令
+     */
+    private void clearListCacheIndex() {
+        try {
+            Set<Object> keys = redisTemplate.opsForSet().members(LIST_KEYS_INDEX);
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+            redisTemplate.delete(LIST_KEYS_INDEX);
+        } catch (Exception e) {
+            // 缓存清除失败不影响主业务
+        }
     }
 }

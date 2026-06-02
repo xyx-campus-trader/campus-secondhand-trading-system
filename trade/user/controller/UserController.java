@@ -1,9 +1,12 @@
 package com.xyx.trade.user.controller;
 
 import com.xyx.trade.user.domain.User;
+import com.xyx.trade.user.service.TokenBlacklistService;
 import com.xyx.trade.user.service.UserService;
 import com.xyx.trade.user.util.AjaxResult;
 import com.xyx.trade.user.util.JwtUtils;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,9 @@ public class UserController {
 
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
 
     @ApiOperation(value = "用户注册", notes = "新用户注册账户")
     @ApiParam(name = "registerRequest", value = "注册请求对象", required = true)
@@ -354,12 +360,24 @@ public class UserController {
         return userService.changePassword(userId, changePasswordRequest.getOldPassword(), changePasswordRequest.getNewPassword());
     }
 
-    @ApiOperation(value = "用户退出登录", notes = "用户退出登录接口")
+    @ApiOperation(value = "用户退出登录", notes = "将当前 Token 加入 Redis 黑名单，使其立即失效")
     @ApiImplicitParam(name = "Authorization", value = "Bearer Token", required = true, dataType = "string", paramType = "header", example = "Bearer eyJhbGciOiJIUzUxMiJ9...")
-    @GetMapping("/logout")
-    public AjaxResult logout() {
-        // 清除本地存储的token/用户信息由前端完成
-        // 这里可以添加其他退出登录逻辑，比如清除redis中的token等
+    @PostMapping("/logout")
+    public AjaxResult logout(@RequestHeader("Authorization") String authorization) {
+        String token = authorization.startsWith("Bearer ") ? authorization.substring(7) : authorization;
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(jwtUtils.getSecretKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            long remaining = claims.getExpiration().getTime() - System.currentTimeMillis();
+            if (remaining > 0) {
+                tokenBlacklistService.blacklist(token, remaining);
+            }
+        } catch (Exception e) {
+            // Token 解析失败也视为已登出
+        }
         return AjaxResult.success("退出登录成功");
     }
 }

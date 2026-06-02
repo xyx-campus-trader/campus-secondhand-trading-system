@@ -47,6 +47,9 @@ public interface ProductMapper extends BaseMapper<Product> {
     @Update("UPDATE xyx_product SET status = #{status} WHERE id = #{id}")
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
+    @Update("UPDATE xyx_product SET status = #{newStatus} WHERE id = #{id} AND status = #{expectedStatus}")
+    int updateStatusCAS(@Param("id") Long id, @Param("expectedStatus") Integer expectedStatus, @Param("newStatus") Integer newStatus);
+
     @Delete("DELETE FROM xyx_product WHERE id = #{id}")
     int deleteById(Long id);
 

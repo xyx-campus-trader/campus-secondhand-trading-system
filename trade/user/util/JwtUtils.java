@@ -4,8 +4,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
@@ -15,12 +17,19 @@ import java.util.Date;
  */
 @Component
 public class JwtUtils {
-    // 密钥，使用更长的Base64编码字符串以满足HS512算法要求（至少512位）
-    private static final String BASE64_SECRET = "c2VjcmV0X2tleV9mb3JfY2FtcHVzX3NlY3JldF93aXRoX2Jhc2U2NF9lbmNvZGluZ190aGlzX2lzX2EgbG9uZ2VyIGtleQ==";
-    private static final Key SECRET_KEY = Keys.hmacShaKeyFor(Base64.getDecoder().decode(BASE64_SECRET));
 
-    // 令牌有效期（毫秒），设置为7天
-    private static final long EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000;
+    @Value("${jwt.secret}")
+    private String base64Secret;
+
+    @Value("${jwt.expiration}")
+    private long expirationTime;
+
+    private Key secretKey;
+
+    @PostConstruct
+    public void init() {
+        this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(base64Secret));
+    }
 
     /**
      * 获取密钥
@@ -28,7 +37,7 @@ public class JwtUtils {
      * @return 密钥
      */
     public Key getSecretKey() {
-        return SECRET_KEY;
+        return secretKey;
     }
 
     /**
@@ -43,7 +52,7 @@ public class JwtUtils {
         // 当前时间
         Date now = new Date();
         // 过期时间
-        Date expiration = new Date(now.getTime() + EXPIRATION_TIME);
+        Date expiration = new Date(now.getTime() + expirationTime);
 
         // 生成令牌
         return Jwts.builder()
@@ -58,7 +67,7 @@ public class JwtUtils {
                 // 设置过期时间
                 .setExpiration(expiration)
                 // 使用HS512算法签名
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS512)
+                .signWith(secretKey, SignatureAlgorithm.HS512)
                 // 压缩
                 .compact();
     }
@@ -73,7 +82,7 @@ public class JwtUtils {
         try {
             // 解析令牌
             Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(SECRET_KEY)
+                    .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -96,7 +105,7 @@ public class JwtUtils {
         try {
             // 解析令牌
             Jwts.parserBuilder()
-                    .setSigningKey(SECRET_KEY)
+                    .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token);
             // 解析成功，令牌有效

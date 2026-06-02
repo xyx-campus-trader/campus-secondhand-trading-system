@@ -49,10 +49,10 @@ public interface OrderMapper extends BaseMapper<Order> {
     @Update("UPDATE `xyx_order` SET status = 4, cancel_reason = #{reason} WHERE id = #{orderId}")
     int cancelOrder(@Param("orderId") Long orderId, @Param("reason") String reason);
 
-    @Update("UPDATE `xyx_order` SET status = 3 WHERE id = #{orderId}")
+    @Update("UPDATE `xyx_order` SET status = 3 WHERE id = #{orderId} AND status IN (1, 2)")
     int completeOrder(@Param("orderId") Long orderId, @Param("status") int status);
 
-    @Update("UPDATE `xyx_order` SET status = 1 WHERE id = #{orderId}")
+    @Update("UPDATE `xyx_order` SET status = 1 WHERE id = #{orderId} AND status = 0")
     int payOrder(@Param("orderId") Long orderId, @Param("status") int status);
 
     @Select("SELECT SUM(total_amount) FROM `xyx_order` WHERE status IN (1, 2, 3)")
