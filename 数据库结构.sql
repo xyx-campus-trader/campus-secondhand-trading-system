@@ -88,6 +88,7 @@ CREATE TABLE `product` (
                            KEY `idx_status_time` (`status`, `create_time`),
                            KEY `idx_campus` (`campus`),
                            KEY `idx_title` (`title`),
+                           KEY `idx_title_category_price` (`title`, `category_id`, `price`),
                            CONSTRAINT `fk_product_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`),
                            CONSTRAINT `fk_product_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
