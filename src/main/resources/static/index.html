@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XYX校园闲置交易平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Home Specific Styles */
+        .banner-container {
+            margin-top: 1rem;
+            position: relative;
+            height: 300px;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            background-color: #e5e7eb;
+        }
+
+        .banner-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .banner-slide.active {
+            opacity: 1;
+        }
+
+        .banner-controls {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .banner-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+        }
+
+        .banner-dot.active {
+            background-color: white;
+        }
+
+        .banner-title {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            width: max-content;
+            max-width: 90%;
+
+            color: white;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-align: center;
+
+            /* Glassmorphism */
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+
+            padding: 1.5rem 3rem;
+            border-radius: 50px;
+            /* Pill shape */
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+
+            /* Animation */
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+            transform: translate(-50%, 80%);
+        }
+
+        .banner-slide.active .banner-title {
+            opacity: 1;
+            transform: translate(-50%, 50%);
+        }
+
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+        }
+
+        .filters-section {
+            background: white;
+            padding: 1rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            background-color: #f3f4f6;
+            transition: all 0.2s;
+        }
+
+        .filter-tag:hover,
+        .filter-tag.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .product-card-img {
+            height: 200px;
+            background-color: #f3f4f6;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .product-card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-info {
+            padding: 1rem;
+        }
+
+        .product-price {
+            color: var(--danger-color);
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .product-title {
+            font-weight: 500;
+            margin: 0.25rem 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+        }
+
+        /* Filter Section Polished */
+        .filters-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .filter-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .filter-label {
+            min-width: 50px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            padding-top: 0.25rem;
+        }
+
+        .filter-content {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .filter-divider {
+            height: 1px;
+            background-color: #f3f4f6;
+            width: 100%;
+        }
+
+        .sort-item {
+            font-size: 0.875rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 0.35rem 0.75rem;
+            border-radius: var(--radius-md);
+            background: transparent;
+        }
+
+        .sort-item:hover {
+            color: var(--primary-color);
+            background-color: #f0f7ff;
+        }
+
+        .sort-item.active {
+            color: white;
+            background-color: var(--primary-color);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container nav-container flex items-center justify-between">
+            <a href="index.html" class="nav-brand">
+                <img src="images/logo.png" style="height:32px; width:32px;" alt="Logo">
+                <span>XYX闲置</span>
+            </a>
+
+            <div class="nav-search">
+                <input type="text" id="searchInput" class="form-input" placeholder="搜索商品...">
+            </div>
+
+            <div class="nav-links items-center">
+                <a href="index.html" class="nav-link active">首页</a>
+                <a href="publish.html" class="nav-link">发布闲置</a>
+
+                <div id="auth-links">
+                    <a href="login.html" class="btn btn-primary">登录</a>
+                    <a href="register.html" class="btn btn-secondary" style="margin-left: 0.5rem;">注册</a>
+                </div>
+
+                <div id="user-menu" class="hidden flex items-center gap-2" style="cursor: pointer;">
+                    <a href="user_center.html" class="flex items-center gap-2">
+                        <img src="images/logo.png" style="width:32px; height:32px; border-radius:50%; background:#eee;" alt="Avatar">
+                        <span class="username text-sm font-weight-bold">用户</span>
+                    </a>
+                    <a href="xyx_admin.html" id="adminLink" class="nav-link hidden" style="color: #dc2626;">管理后台</a>
+                    <button onclick="Utils.logout()" class="text-sm text-secondary hover:text-danger ml-2">退出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- Banner -->
+        <div class="banner-container" id="bannerContainer">
+            <!-- Slides injected by JS -->
+            <div class="banner-controls" id="bannerControls"></div>
+        </div>
+
+        <!-- Filters -->
+        <!-- Filters Area -->
+        <div class="filters-section mt-4" id="filtersArea">
+            <!-- Row 1: Category -->
+            <div class="filter-row">
+                <div class="filter-label">分类:</div>
+                <div class="filter-content">
+                    <span class="filter-tag active" data-cat="">全部</span>
+                    <span class="filter-tag" data-cat="1">数码电子</span>
+                    <span class="filter-tag" data-cat="2">书籍资料</span>
+                    <span class="filter-tag" data-cat="3">日用百货</span>
+                    <span class="filter-tag" data-cat="4">运动器材</span>
+                    <span class="filter-tag" data-cat="5">服饰鞋包</span>
+                    <span class="filter-tag" data-cat="6">美妆护肤</span>
+                    <span class="filter-tag" data-cat="7">虚拟商品</span>
+                    <span class="filter-tag" data-cat="8">其他</span>
+                </div>
+            </div>
+
+            <div class="filter-divider"></div>
+
+            <!-- Row 2: Advanced Filters -->
+            <div class="filter-row">
+                <div class="filter-label">筛选:</div>
+                <div class="filter-content" style="gap: 2rem;">
+                    <!-- Campus -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-secondary">校区</span>
+                        <select class="form-select" style="width: 120px; padding: 0.25rem 0.5rem;" id="campusFilter">
+                            <option value="">全部校区</option>
+                            <option value="东校区">东校区</option>
+                            <option value="西校区">西校区</option>
+                        </select>
+                    </div>
+
+                    <!-- Condition -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-secondary">成色</span>
+                        <select class="form-select" style="width: 110px; padding: 0.25rem 0.5rem;" id="conditionFilter">
+                            <option value="">全部</option>
+                            <option value="0">全新</option>
+                            <option value="1">几乎全新</option>
+                            <option value="2">有使用痕迹</option>
+                        </select>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-secondary">价格</span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="minPrice" class="form-input" placeholder="￥最小值" style="width: 85px; padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                            <span class="text-secondary">-</span>
+                            <input type="number" id="maxPrice" class="form-input" placeholder="￥最大值" style="width: 85px; padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                            <button onclick="applyAdvancedFilters()" class="btn btn-primary" style="margin-left: 5px; padding: 0.25rem 0.75rem; font-size: 0.85rem;">确定</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-divider"></div>
+
+            <!-- Row 3: Sort -->
+            <div class="filter-row">
+                <div class="filter-label">排序:</div>
+                <div class="filter-content" style="justify-content: space-between;">
+                    <div class="flex gap-2">
+                        <span class="sort-item active" data-sort="">综合推荐</span>
+                        <span class="sort-item" data-sort="time" data-order="desc">最新发布</span>
+                        <span class="sort-item" data-sort="price" data-order="asc">价格最低</span>
+                        <span class="sort-item" data-sort="price" data-order="desc">价格最高</span>
+                    </div>
+                    <button onclick="resetFilters()" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem; border: 1px dashed #d1d5db;">重置全部</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product List -->
+        <h2 class="text-xl mb-4">最新发布</h2>
+        <div class="product-grid" id="productGrid">
+            <!-- Loading -->
+            <p class="text-secondary">加载中...</p>
+        </div>
+        <!-- Pagination Controls -->
+        <div id="pagination" class="flex justify-center mt-4 gap-2"></div>
+
+    </main>
+
+    <footer class="footer text-center">
+        <p>&copy; 2025 XYX个人自研校园闲置平台 版权所有</p>
+    </footer>
+
+    <script src="js/api.js?v=1.2"></script>
+    <script src="js/utils.js?v=1.2"></script>
+
+
+    <script>
+        // State
+        let currentPage = 1;
+        const pageSize = 12;
+        let currentCategory = '';
+        let currentKeyword = '';
+        let currentCampus = '';
+        let currentCondition = '';
+        let minPrice = '';
+        let maxPrice = '';
+        let currentSortBy = '';
+        let currentOrder = '';
+        let bannerInterval = null;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.checkAuth();
+
+            // Parse URL Parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('category')) currentCategory = urlParams.get('category');
+            if (urlParams.has('keyword')) {
+                currentKeyword = urlParams.get('keyword');
+                document.getElementById('searchInput').value = currentKeyword;
+            }
+            if (urlParams.has('campus')) {
+                currentCampus = urlParams.get('campus');
+                const campusSelect = document.getElementById('campusFilter');
+                if (campusSelect) campusSelect.value = currentCampus;
+            }
+            if (urlParams.has('condition')) {
+                currentCondition = urlParams.get('condition');
+                const condSelect = document.getElementById('conditionFilter');
+                if (condSelect) condSelect.value = currentCondition;
+            }
+            if (urlParams.has('minPrice')) {
+                minPrice = urlParams.get('minPrice');
+                document.getElementById('minPrice').value = minPrice;
+            }
+            if (urlParams.has('maxPrice')) {
+                maxPrice = urlParams.get('maxPrice');
+                document.getElementById('maxPrice').value = maxPrice;
+            }
+            if (urlParams.has('sortBy')) currentSortBy = urlParams.get('sortBy');
+            if (urlParams.has('order')) currentOrder = urlParams.get('order');
+
+            // Sync UI for Category tags
+            if (currentCategory) {
+                const tags = document.querySelectorAll('.filter-tag');
+                tags.forEach(t => {
+                    t.classList.toggle('active', t.getAttribute('data-cat') === currentCategory);
+                });
+            }
+
+            // Sync UI for Sorting
+            if (currentSortBy || currentOrder) {
+                const sortItems = document.querySelectorAll('.sort-item');
+                sortItems.forEach(item => {
+                    const s = item.getAttribute('data-sort');
+                    const o = item.getAttribute('data-order') || '';
+                    item.classList.toggle('active', s === currentSortBy && o === currentOrder);
+                });
+            }
+
+            loadBanners();
+            loadProducts();
+            setupSearchAndFilters();
+
+            // Auto-scroll to items if filtered
+            if (currentCategory || currentKeyword || currentCampus || currentCondition || minPrice || maxPrice) {
+                setTimeout(() => {
+                    document.getElementById('filtersArea').scrollIntoView({ behavior: 'smooth' });
+                }, 800);
+            }
+        });
+
+        // Banners (Carousel)
+        async function loadBanners() {
+            const container = document.getElementById('bannerContainer');
+            const controls = document.getElementById('bannerControls');
+
+            try {
+                let banners = [];
+                // Try to get banners from API
+                try {
+                    const res = await API.getBanners();
+                    banners = res.data || [];
+                } catch (e) { console.warn('Banner API failed', e); }
+
+                // Fallback if empty
+                if (banners.length === 0) {
+                    banners = [
+                        { id: 1, imageUrl: 'images/banner_placeholder.png', title: 'Welcome' },
+                        { id: 2, imageUrl: 'images/banner_placeholder.png', title: 'Banner 2' }
+                    ];
+                }
+
+                // Render Slides
+                container.innerHTML = '';
+                // Controls container
+                const ctrls = document.createElement('div');
+                ctrls.className = 'banner-controls';
+                ctrls.id = 'bannerControls';
+
+                banners.forEach((b, index) => {
+                    // Slide
+                    const slide = document.createElement('div');
+                    slide.className = `banner-slide ${index === 0 ? 'active' : ''}`;
+
+                    let imgUrl = Utils.getImgUrl(b.imageUrl, 'images/banner_placeholder.png');
+
+                    // Fix for old backend mock data
+                    if (imgUrl === 'banner1.jpg' || imgUrl === 'banner2.jpg' || imgUrl === 'banner3.jpg') {
+                        imgUrl = 'images/banner_placeholder.png';
+                    }
+
+                    // Use background image for easier cover fitting or img tag
+                    slide.style.backgroundImage = '';
+
+                    // Link wrapper if exists
+                    let contentHtml = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='images/banner_placeholder.png'">`;
+
+                    if (b.title) {
+                        contentHtml += `<div class="banner-title">${b.title}</div>`;
+                    }
+
+                    if (b.linkUrl) {
+                        // If linkUrl starts with /, assume it's relative to root, but user asked for "jump to link"
+                        // The provided links are like /product/list?tag=...
+                        // Since this is a static file server likely, we should ensure it resolves correctly.
+                        // Assuming index.html handles the routing or it's a real server. 
+                        // If it's pure static file opening, /product/list might fail.
+                        // But let's respect the data. 
+                        // However, to make it work in this "index.html" context if it's SPA-ish:
+                        // The user said "Click ... jump link".
+                        // I will wrap in <a>.
+                        slide.innerHTML = `<a href="${b.linkUrl}" style="display:block;width:100%;height:100%;text-decoration:none;">${contentHtml}</a>`;
+                    } else {
+                        slide.innerHTML = contentHtml;
+                    }
+
+                    container.appendChild(slide);
+
+                    // Dot
+                    const dot = document.createElement('div');
+                    dot.className = `banner-dot ${index === 0 ? 'active' : ''}`;
+                    dot.onclick = () => switchBanner(index);
+                    ctrls.appendChild(dot);
+                });
+                container.appendChild(ctrls);
+
+                // Auto Play
+                startBannerAutoPlay(banners.length);
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        let currentBannerIndex = 0;
+        function switchBanner(index) {
+            const slides = document.querySelectorAll('.banner-slide');
+            const dots = document.querySelectorAll('.banner-dot');
+            if (!slides.length) return;
+
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+
+            if (index >= slides.length) index = 0;
+            if (index < 0) index = slides.length - 1;
+
+            slides[index].classList.add('active');
+            dots[index].classList.add('active');
+            currentBannerIndex = index;
+        }
+
+        function startBannerAutoPlay(count) {
+            if (bannerInterval) clearInterval(bannerInterval);
+            if (count <= 1) return;
+            bannerInterval = setInterval(() => {
+                switchBanner(currentBannerIndex + 1);
+            }, 5000);
+        }
+
+        // Products
+        async function loadProducts(page = 1) {
+            currentPage = page;
+            const container = document.getElementById('productGrid');
+            const paginationEl = document.getElementById('pagination');
+
+            // Scroll to top of grid
+            if (page > 1) {
+                document.querySelector('.filters-section').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            container.innerHTML = '<p class="text-secondary">加载中...</p>';
+
+            const params = {
+                pageNum: currentPage,
+                pageSize: pageSize
+            };
+            if (currentCategory) params.categoryId = currentCategory;
+            if (currentKeyword) params.keyword = currentKeyword;
+            if (currentCampus) params.campus = currentCampus;
+            if (currentCondition !== '') params.condition = currentCondition;
+            if (minPrice) params.minPrice = minPrice;
+            if (maxPrice) params.maxPrice = maxPrice;
+            if (currentSortBy) params.sortBy = currentSortBy;
+            if (currentOrder) params.order = currentOrder;
+
+            try {
+                const res = await API.getProductList(params);
+                const list = (res.data && res.data.list) ? res.data.list : [];
+                const total = (res.data && res.data.total) ? res.data.total : 0;
+
+                if (list.length === 0) {
+                    container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">暂无商品</p>';
+                    paginationEl.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                // Fetch user details for all products in parallel
+                const productsWithUsers = await Promise.all(list.map(async (p) => {
+                    let user = p.user || {};
+                    try {
+                        // Use userId if available, or p.user.id
+                        const userId = p.userId || (p.user ? p.user.id : null);
+                        if (userId) {
+                            const userRes = await API.getUserById(userId);
+                            if (userRes.code === 200 && userRes.data) {
+                                user = userRes.data;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to fetch user info for product ${p.id}`, err);
+                    }
+                    return { ...p, userDetails: user }; // Attach new user details
+                }));
+
+                productsWithUsers.forEach(p => {
+                    const card = document.createElement('a');
+                    card.href = `product_detail.html?id=${p.id}`;
+                    card.className = 'card';
+
+                    let coverImg = Utils.getImgUrl(p.coverImage);
+
+                    // Use fetched user details
+                    const userAvatar = Utils.getImgUrl(p.userDetails.avatarUrl, 'images/avatar_placeholder.png');
+                    const userName = p.userDetails.nickname || p.userDetails.username || '用户';
+
+                    card.innerHTML = `
+                        <div class="product-card-img">
+                            <img src="${coverImg}" alt="${p.title}" onerror="this.onerror=null;this.src='images/product_placeholder.png'">
+                        </div>
+                        <div class="product-info">
+                            <div class="product-price">${Utils.formatPrice(p.price)}</div>
+                            <div class="product-title">${p.title}</div>
+                            <div class="flex justify-between text-xs text-secondary mt-2">
+                                <span>${p.campus || '全部校区'}</span>
+                                <span>${p.viewCount || 0}浏览</span>
+                            </div>
+                            <div class="product-meta mt-2">
+                                <div class="flex items-center gap-2">
+                                    <img src="${userAvatar}" style="width:20px; height:20px; border-radius:50%;" onerror="this.src='images/avatar_placeholder.png'">
+                                    <span>${userName}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                renderPagination(total);
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">加载失败，请重试</p>';
+            }
+        }
+
+        // Pagination Render
+        function renderPagination(total) {
+            const paginationEl = document.getElementById('pagination');
+            const totalPages = Math.ceil(total / pageSize);
+
+            if (totalPages <= 1) {
+                paginationEl.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Prev
+            html += `<button class="btn btn-secondary ${currentPage === 1 ? 'disabled' : ''}" 
+                onclick="${currentPage > 1 ? `loadProducts(${currentPage - 1})` : ''}">上一页</button>`;
+
+            // Page Numbers (Simple version: 1 ... 5 6 7 ... 10)
+            // For MVP, just show current and maybe a few around, or just simple Prev/Next
+            html += `<span class="flex items-center px-2">第 ${currentPage} / ${totalPages} 页</span>`;
+
+            // Next
+            html += `<button class="btn btn-secondary ${currentPage === totalPages ? 'disabled' : ''}" 
+                onclick="${currentPage < totalPages ? `loadProducts(${currentPage + 1})` : ''}">下一页</button>`;
+
+            paginationEl.innerHTML = html;
+        }
+
+        function setupSearchAndFilters() {
+            // Search
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        currentKeyword = e.target.value;
+                        loadProducts(1);
+                    }
+                });
+            }
+
+            // Category
+            const tags = document.querySelectorAll('.filter-tag');
+            tags.forEach(tag => {
+                tag.addEventListener('click', () => {
+                    tags.forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                    currentCategory = tag.getAttribute('data-cat');
+                    loadProducts(1);
+                });
+            });
+
+            // Campus
+            const campusSelect = document.getElementById('campusFilter');
+            if (campusSelect) {
+                campusSelect.addEventListener('change', (e) => {
+                    currentCampus = e.target.value;
+                    loadProducts(1);
+                });
+            }
+
+            // Condition
+            const condSelect = document.getElementById('conditionFilter');
+            if (condSelect) {
+                condSelect.addEventListener('change', (e) => {
+                    currentCondition = e.target.value;
+                    loadProducts(1);
+                });
+            }
+
+            // Sort
+            const sortItems = document.querySelectorAll('.sort-item');
+            sortItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    sortItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    currentSortBy = item.getAttribute('data-sort');
+                    currentOrder = item.getAttribute('data-order') || '';
+                    loadProducts(1);
+                });
+            });
+        }
+
+        function applyAdvancedFilters() {
+            minPrice = document.getElementById('minPrice').value;
+            maxPrice = document.getElementById('maxPrice').value;
+            loadProducts(1);
+        }
+
+        function resetFilters() {
+            // Reset state
+            currentCategory = '';
+            currentKeyword = '';
+            currentCampus = '';
+            currentCondition = '';
+            minPrice = '';
+            maxPrice = '';
+            currentSortBy = '';
+            currentOrder = '';
+            currentPage = 1;
+
+            // Reset UI - Inputs
+            document.getElementById('searchInput').value = '';
+            document.getElementById('campusFilter').value = '';
+            document.getElementById('conditionFilter').value = '';
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+
+            // Reset UI - Tags
+            const tags = document.querySelectorAll('.filter-tag');
+            tags.forEach(t => t.classList.toggle('active', t.getAttribute('data-cat') === ''));
+
+            // Reset UI - Sort
+            const sortItems = document.querySelectorAll('.sort-item');
+            sortItems.forEach(item => {
+                const isDefault = item.getAttribute('data-sort') === '';
+                item.classList.toggle('active', isDefault);
+            });
+
+            // Clear URL params without reloading
+            const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({ path: baseUrl }, '', baseUrl);
+
+            // Reload
+            loadProducts(1);
+        }
+    </script>
+
+    <script>
+        // State
+        let currentPage = 1;
+        const pageSize = 12;
+        let currentCategory = '';
+        let currentKeyword = '';
+        let currentCampus = '';
+        let currentCondition = '';
+        let minPrice = '';
+        let maxPrice = '';
+        let currentSortBy = '';
+        let currentOrder = '';
+        let bannerInterval = null;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.checkAuth();
+
+            // Parse URL Parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('category')) currentCategory = urlParams.get('category');
+            if (urlParams.has('keyword')) {
+                currentKeyword = urlParams.get('keyword');
+                document.getElementById('searchInput').value = currentKeyword;
+            }
+            if (urlParams.has('campus')) {
+                currentCampus = urlParams.get('campus');
+                const campusSelect = document.getElementById('campusFilter');
+                if (campusSelect) campusSelect.value = currentCampus;
+            }
+            if (urlParams.has('condition')) {
+                currentCondition = urlParams.get('condition');
+                const condSelect = document.getElementById('conditionFilter');
+                if (condSelect) condSelect.value = currentCondition;
+            }
+            if (urlParams.has('minPrice')) {
+                minPrice = urlParams.get('minPrice');
+                document.getElementById('minPrice').value = minPrice;
+            }
+            if (urlParams.has('maxPrice')) {
+                maxPrice = urlParams.get('maxPrice');
+                document.getElementById('maxPrice').value = maxPrice;
+            }
+            if (urlParams.has('sortBy')) currentSortBy = urlParams.get('sortBy');
+            if (urlParams.has('order')) currentOrder = urlParams.get('order');
+
+            // Sync UI for Category tags
+            if (currentCategory) {
+                const tags = document.querySelectorAll('.filter-tag');
+                tags.forEach(t => {
+                    t.classList.toggle('active', t.getAttribute('data-cat') === currentCategory);
+                });
+            }
+
+            // Sync UI for Sorting
+            if (currentSortBy || currentOrder) {
+                const sortItems = document.querySelectorAll('.sort-item');
+                sortItems.forEach(item => {
+                    const s = item.getAttribute('data-sort');
+                    const o = item.getAttribute('data-order') || '';
+                    item.classList.toggle('active', s === currentSortBy && o === currentOrder);
+                });
+            }
+
+            loadBanners();
+            loadProducts();
+            setupSearchAndFilters();
+
+            // Auto-scroll to items if filtered
+            if (currentCategory || currentKeyword || currentCampus || currentCondition || minPrice || maxPrice) {
+                setTimeout(() => {
+                    document.getElementById('filtersArea').scrollIntoView({ behavior: 'smooth' });
+                }, 800);
+            }
+        });
+
+        // Banners (Carousel)
+        async function loadBanners() {
+            const container = document.getElementById('bannerContainer');
+            const controls = document.getElementById('bannerControls');
+
+            try {
+                let banners = [];
+                // Try to get banners from API
+                try {
+                    const res = await API.getBanners();
+                    banners = res.data || [];
+                } catch (e) { console.warn('Banner API failed', e); }
+
+                // Fallback if empty
+                if (banners.length === 0) {
+                    banners = [
+                        { id: 1, imageUrl: 'images/banner_placeholder.png', title: 'Welcome' },
+                        { id: 2, imageUrl: 'images/banner_placeholder.png', title: 'Banner 2' }
+                    ];
+                }
+
+                // Render Slides
+                container.innerHTML = '';
+                // Controls container
+                const ctrls = document.createElement('div');
+                ctrls.className = 'banner-controls';
+                ctrls.id = 'bannerControls';
+
+                banners.forEach((b, index) => {
+                    // Slide
+                    const slide = document.createElement('div');
+                    slide.className = `banner-slide ${index === 0 ? 'active' : ''}`;
+
+                    let imgUrl = Utils.getImgUrl(b.imageUrl, 'images/banner_placeholder.png');
+
+                    // Fix for old backend mock data
+                    if (imgUrl === 'banner1.jpg' || imgUrl === 'banner2.jpg' || imgUrl === 'banner3.jpg') {
+                        imgUrl = 'images/banner_placeholder.png';
+                    }
+
+                    // Use background image for easier cover fitting or img tag
+                    slide.style.backgroundImage = '';
+
+                    // Link wrapper if exists
+                    let contentHtml = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='images/banner_placeholder.png'">`;
+
+                    if (b.title) {
+                        contentHtml += `<div class="banner-title">${b.title}</div>`;
+                    }
+
+                    if (b.linkUrl) {
+                        // If linkUrl starts with /, assume it's relative to root, but user asked for "jump to link"
+                        // The provided links are like /product/list?tag=...
+                        // Since this is a static file server likely, we should ensure it resolves correctly.
+                        // Assuming index.html handles the routing or it's a real server. 
+                        // If it's pure static file opening, /product/list might fail.
+                        // But let's respect the data. 
+                        // However, to make it work in this "index.html" context if it's SPA-ish:
+                        // The user said "Click ... jump link".
+                        // I will wrap in <a>.
+                        slide.innerHTML = `<a href="${b.linkUrl}" style="display:block;width:100%;height:100%;text-decoration:none;">${contentHtml}</a>`;
+                    } else {
+                        slide.innerHTML = contentHtml;
+                    }
+
+                    container.appendChild(slide);
+
+                    // Dot
+                    const dot = document.createElement('div');
+                    dot.className = `banner-dot ${index === 0 ? 'active' : ''}`;
+                    dot.onclick = () => switchBanner(index);
+                    ctrls.appendChild(dot);
+                });
+                container.appendChild(ctrls);
+
+                // Auto Play
+                startBannerAutoPlay(banners.length);
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        let currentBannerIndex = 0;
+        function switchBanner(index) {
+            const slides = document.querySelectorAll('.banner-slide');
+            const dots = document.querySelectorAll('.banner-dot');
+            if (!slides.length) return;
+
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+
+            if (index >= slides.length) index = 0;
+            if (index < 0) index = slides.length - 1;
+
+            slides[index].classList.add('active');
+            dots[index].classList.add('active');
+            currentBannerIndex = index;
+        }
+
+        function startBannerAutoPlay(count) {
+            if (bannerInterval) clearInterval(bannerInterval);
+            if (count <= 1) return;
+            bannerInterval = setInterval(() => {
+                switchBanner(currentBannerIndex + 1);
+            }, 5000);
+        }
+
+        // Products
+        async function loadProducts(page = 1) {
+            currentPage = page;
+            const container = document.getElementById('productGrid');
+            const paginationEl = document.getElementById('pagination');
+
+            // Scroll to top of grid
+            if (page > 1) {
+                document.querySelector('.filters-section').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            container.innerHTML = '<p class="text-secondary">加载中...</p>';
+
+            const params = {
+                pageNum: currentPage,
+                pageSize: pageSize
+            };
+            if (currentCategory) params.categoryId = currentCategory;
+            if (currentKeyword) params.keyword = currentKeyword;
+            if (currentCampus) params.campus = currentCampus;
+            if (currentCondition !== '') params.condition = currentCondition;
+            if (minPrice) params.minPrice = minPrice;
+            if (maxPrice) params.maxPrice = maxPrice;
+            if (currentSortBy) params.sortBy = currentSortBy;
+            if (currentOrder) params.order = currentOrder;
+
+            try {
+                const res = await API.getProductList(params);
+                const list = (res.data && res.data.list) ? res.data.list : [];
+                const total = (res.data && res.data.total) ? res.data.total : 0;
+
+                if (list.length === 0) {
+                    container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">暂无商品</p>';
+                    paginationEl.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                // Fetch user details for all products in parallel
+                const productsWithUsers = await Promise.all(list.map(async (p) => {
+                    let user = p.user || {};
+                    try {
+                        // Use userId if available, or p.user.id
+                        const userId = p.userId || (p.user ? p.user.id : null);
+                        if (userId) {
+                            const userRes = await API.getUserById(userId);
+                            if (userRes.code === 200 && userRes.data) {
+                                user = userRes.data;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to fetch user info for product ${p.id}`, err);
+                    }
+                    return { ...p, userDetails: user }; // Attach new user details
+                }));
+
+                productsWithUsers.forEach(p => {
+                    const card = document.createElement('a');
+                    card.href = `product_detail.html?id=${p.id}`;
+                    card.className = 'card';
+
+                    let coverImg = Utils.getImgUrl(p.coverImage);
+
+                    // Use fetched user details
+                    const userAvatar = Utils.getImgUrl(p.userDetails.avatarUrl, 'images/avatar_placeholder.png');
+                    const userName = p.userDetails.nickname || p.userDetails.username || '用户';
+
+                    card.innerHTML = `
+                        <div class="product-card-img">
+                            <img src="${coverImg}" alt="${p.title}" onerror="this.onerror=null;this.src='images/product_placeholder.png'">
+                        </div>
+                        <div class="product-info">
+                            <div class="product-price">${Utils.formatPrice(p.price)}</div>
+                            <div class="product-title">${p.title}</div>
+                            <div class="flex justify-between text-xs text-secondary mt-2">
+                                <span>${p.campus || '全部校区'}</span>
+                                <span>${p.viewCount || 0}浏览</span>
+                            </div>
+                            <div class="product-meta mt-2">
+                                <div class="flex items-center gap-2">
+                                    <img src="${userAvatar}" style="width:20px; height:20px; border-radius:50%;" onerror="this.src='images/avatar_placeholder.png'">
+                                    <span>${userName}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                renderPagination(total);
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-secondary" style="grid-column: 1/-1; text-align: center;">加载失败，请重试</p>';
+            }
+        }
+
+        // Pagination Render
+        function renderPagination(total) {
+            const paginationEl = document.getElementById('pagination');
+            const totalPages = Math.ceil(total / pageSize);
+
+            if (totalPages <= 1) {
+                paginationEl.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Prev
+            html += `<button class="btn btn-secondary ${currentPage === 1 ? 'disabled' : ''}" 
+                onclick="${currentPage > 1 ? `loadProducts(${currentPage - 1})` : ''}">上一页</button>`;
+
+            // Page Numbers (Simple version: 1 ... 5 6 7 ... 10)
+            // For MVP, just show current and maybe a few around, or just simple Prev/Next
+            html += `<span class="flex items-center px-2">第 ${currentPage} / ${totalPages} 页</span>`;
+
+            // Next
+            html += `<button class="btn btn-secondary ${currentPage === totalPages ? 'disabled' : ''}" 
+                onclick="${currentPage < totalPages ? `loadProducts(${currentPage + 1})` : ''}">下一页</button>`;
+
+            paginationEl.innerHTML = html;
+        }
+
+        function setupSearchAndFilters() {
+            // Search
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        currentKeyword = e.target.value;
+                        loadProducts(1);
+                    }
+                });
+            }
+
+            // Category
+            const tags = document.querySelectorAll('.filter-tag');
+            tags.forEach(tag => {
+                tag.addEventListener('click', () => {
+                    tags.forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                    currentCategory = tag.getAttribute('data-cat');
+                    loadProducts(1);
+                });
+            });
+
+            // Campus
+            const campusSelect = document.getElementById('campusFilter');
+            if (campusSelect) {
+                campusSelect.addEventListener('change', (e) => {
+                    currentCampus = e.target.value;
+                    loadProducts(1);
+                });
+            }
+
+            // Condition
+            const condSelect = document.getElementById('conditionFilter');
+            if (condSelect) {
+                condSelect.addEventListener('change', (e) => {
+                    currentCondition = e.target.value;
+                    loadProducts(1);
+                });
+            }
+
+            // Sort
+            const sortItems = document.querySelectorAll('.sort-item');
+            sortItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    sortItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    currentSortBy = item.getAttribute('data-sort');
+                    currentOrder = item.getAttribute('data-order') || '';
+                    loadProducts(1);
+                });
+            });
+        }
+
+        function applyAdvancedFilters() {
+            minPrice = document.getElementById('minPrice').value;
+            maxPrice = document.getElementById('maxPrice').value;
+            loadProducts(1);
+        }
+
+        function resetFilters() {
+            // Reset state
+            currentCategory = '';
+            currentKeyword = '';
+            currentCampus = '';
+            currentCondition = '';
+            minPrice = '';
+            maxPrice = '';
+            currentSortBy = '';
+            currentOrder = '';
+            currentPage = 1;
+
+            // Reset UI - Inputs
+            document.getElementById('searchInput').value = '';
+            document.getElementById('campusFilter').value = '';
+            document.getElementById('conditionFilter').value = '';
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+
+            // Reset UI - Tags
+            const tags = document.querySelectorAll('.filter-tag');
+            tags.forEach(t => t.classList.toggle('active', t.getAttribute('data-cat') === ''));
+
+            // Reset UI - Sort
+            const sortItems = document.querySelectorAll('.sort-item');
+            sortItems.forEach(item => {
+                const isDefault = item.getAttribute('data-sort') === '';
+                item.classList.toggle('active', isDefault);
+            });
+
+            // Clear URL params without reloading
+            const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({ path: baseUrl }, '', baseUrl);
+
+            // Reload
+            loadProducts(1);
+        }
+    </script>
+</body>
+
+</html>
