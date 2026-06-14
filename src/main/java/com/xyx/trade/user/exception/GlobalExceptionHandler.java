@@ -1,6 +1,7 @@
 package com.xyx.trade.user.exception;
 
 import com.xyx.trade.user.util.AjaxResult;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -8,10 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * 全局异常处理类
- * 处理Controller层的各种异常，返回统一的AjaxResult格式
- */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,9 +22,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public AjaxResult handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
-        String message = "请求参数格式错误: " + e.getMessage();
-        System.out.println("DEBUG: " + message); // Print to console for debugging
-        return AjaxResult.paramError(message);
+        return AjaxResult.paramError("请求参数格式错误");
     }
 
     /**
@@ -59,8 +55,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public AjaxResult handleException(Exception e) {
-        String message = "服务器内部错误: " + e.getMessage();
-        e.printStackTrace(); // Print stack trace to console
-        return AjaxResult.error(message);
+        log.error("系统异常", e);
+        return AjaxResult.error("服务器内部错误，请稍后重试");
     }
 }

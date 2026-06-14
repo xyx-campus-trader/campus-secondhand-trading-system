@@ -5,7 +5,9 @@ import com.xyx.trade.product.domain.Favorite;
 import com.xyx.trade.product.domain.Product;
 import com.xyx.trade.product.mapper.FavoriteMapper;
 import com.xyx.trade.product.service.FavoriteService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,7 @@ import java.util.Map;
 /**
  * 收藏服务实现类
  */
+@Slf4j
 @Service
 public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> implements FavoriteService {
 
@@ -30,16 +33,19 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
     public String toggleFavorite(Long productId, Long userId) {
         int count = favoriteMapper.checkIsFavorite(userId, productId);
         if (count > 0) {
-            // 已存在记录，执行"取消收藏"
             favoriteMapper.deleteByUserAndProduct(userId, productId);
             return "已取消收藏";
         } else {
-            // 不存在记录，执行"添加收藏"
             Favorite favorite = new Favorite();
             favorite.setUserId(userId);
             favorite.setProductId(productId);
-            baseMapper.insert(favorite);
-            return "收藏成功";
+            try {
+                baseMapper.insert(favorite);
+                return "收藏成功";
+            } catch (DuplicateKeyException e) {
+                log.warn("收藏并发冲突, userId={}, productId={}", userId, productId);
+                return "收藏成功";
+            }
         }
     }
 

@@ -37,8 +37,16 @@ public class ProductController {
      */
     @ApiOperation("发布商品")
     @PostMapping("/create")
-    public Map<String, Object> createProduct(@RequestBody Product product) {
+    public Map<String, Object> createProduct(@RequestBody Product product, HttpServletRequest request) {
         try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return Map.of("code", 401, "msg", "请先登录");
+            }
+            product.setUserId(userId);
+            product.setStatus(1);
+            product.setCreateTime(new Date());
+            product.setUpdateTime(new Date());
             Long id = productService.createProduct(product);
             return Map.of("code", 200, "msg", "发布成功", "data", id);
         } catch (ServiceException e) {
@@ -98,8 +106,19 @@ public class ProductController {
      */
     @ApiOperation("编辑商品")
     @PostMapping("/update")
-    public Map<String, Object> updateProduct(@RequestBody Product product) {
+    public Map<String, Object> updateProduct(@RequestBody Product product, HttpServletRequest request) {
         try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return Map.of("code", 401, "msg", "请先登录");
+            }
+            Product existing = productService.getProductById(product.getId());
+            if (existing == null) {
+                return Map.of("code", 404, "msg", "商品不存在");
+            }
+            if (!existing.getUserId().equals(userId)) {
+                return Map.of("code", 403, "msg", "无权操作该商品");
+            }
             boolean success = productService.updateProduct(product);
             return Map.of("code", 200, "msg", "更新成功", "data", success);
         } catch (ServiceException e) {
@@ -114,9 +133,20 @@ public class ProductController {
      */
     @ApiOperation("删除商品")
     @PostMapping("/delete")
-    public Map<String, Object> deleteProduct(@RequestBody Map<String, Long> params) {
+    public Map<String, Object> deleteProduct(@RequestBody Map<String, Long> params, HttpServletRequest request) {
         try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return Map.of("code", 401, "msg", "请先登录");
+            }
             Long id = params.get("id");
+            Product existing = productService.getProductById(id);
+            if (existing == null) {
+                return Map.of("code", 404, "msg", "商品不存在");
+            }
+            if (!existing.getUserId().equals(userId)) {
+                return Map.of("code", 403, "msg", "无权操作该商品");
+            }
             boolean success = productService.deleteProduct(id);
             return Map.of("code", 200, "msg", "删除成功", "data", success);
         } catch (ServiceException e) {
@@ -177,10 +207,15 @@ public class ProductController {
     @ApiOperation("获取我的商品")
     @GetMapping("/my")
     public Map<String, Object> getMyProducts(
+            HttpServletRequest request,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "12") Integer pageSize) {
         try {
-            Map<String, Object> result = productService.getMyProducts(pageNum, pageSize);
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return Map.of("code", 401, "msg", "请先登录");
+            }
+            Map<String, Object> result = productService.selectUserProductList(userId, null, pageNum, pageSize);
             return Map.of("code", 200, "msg", "获取成功", "data", result);
         } catch (Exception e) {
             return Map.of("code", 500, "msg", "系统错误");

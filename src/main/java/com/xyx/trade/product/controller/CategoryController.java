@@ -9,6 +9,7 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
@@ -54,24 +55,38 @@ public class CategoryController {
         }
     }
 
-    @ApiOperation(value = "添加分类", notes = "添加新的商品分类")
+    @ApiOperation(value = "添加分类", notes = "添加新的商品分类（需要管理员权限）")
     @ApiParam(name = "category", value = "分类信息", required = true)
     @PostMapping("/add")
-    public AjaxResult addCategory(@Valid @RequestBody Category category) {
+    public AjaxResult addCategory(@Valid @RequestBody Category category, HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            return AjaxResult.error(403, "无操作权限");
+        }
         return categoryService.addCategory(category);
     }
 
-    @ApiOperation(value = "更新分类", notes = "更新商品分类信息")
+    @ApiOperation(value = "更新分类", notes = "更新商品分类信息（需要管理员权限）")
     @ApiParam(name = "category", value = "分类信息", required = true)
     @PutMapping("/update")
-    public AjaxResult updateCategory(@Valid @RequestBody Category category) {
+    public AjaxResult updateCategory(@Valid @RequestBody Category category, HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            return AjaxResult.error(403, "无操作权限");
+        }
         return categoryService.updateCategory(category);
     }
 
-    @ApiOperation(value = "删除分类", notes = "删除商品分类")
+    @ApiOperation(value = "删除分类", notes = "删除商品分类（需要管理员权限）")
     @ApiParam(name = "id", value = "分类ID", required = true, example = "1")
     @DeleteMapping("/delete")
-    public AjaxResult deleteCategory(@RequestParam Long id) {
+    public AjaxResult deleteCategory(@RequestParam Long id, HttpServletRequest request) {
+        if (!isAdmin(request)) {
+            return AjaxResult.error(403, "无操作权限");
+        }
         return categoryService.deleteCategory(id);
+    }
+
+    private boolean isAdmin(HttpServletRequest request) {
+        String role = (String) request.getAttribute("role");
+        return "ADMIN".equals(role);
     }
 }

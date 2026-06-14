@@ -6,7 +6,10 @@ import com.xyx.trade.user.util.AjaxResult;
 import com.xyx.trade.user.util.JwtUtils;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -26,6 +29,9 @@ public class UserController {
 
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @ApiOperation(value = "用户注册", notes = "新用户注册账户")
     @ApiParam(name = "registerRequest", value = "注册请求对象", required = true)
@@ -357,9 +363,15 @@ public class UserController {
     @ApiOperation(value = "用户退出登录", notes = "用户退出登录接口")
     @ApiImplicitParam(name = "Authorization", value = "Bearer Token", required = true, dataType = "string", paramType = "header", example = "Bearer eyJhbGciOiJIUzUxMiJ9...")
     @GetMapping("/logout")
-    public AjaxResult logout() {
-        // 清除本地存储的token/用户信息由前端完成
-        // 这里可以添加其他退出登录逻辑，比如清除redis中的token等
+    public AjaxResult logout(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId != null) {
+            long ttl = jwtUtils.getRemainingTtl(request.getHeader("Authorization"));
+            if (ttl > 0) {
+                stringRedisTemplate.opsForValue().set("blacklist:token:" + userId,
+                        "1", ttl, TimeUnit.MILLISECONDS);
+            }
+        }
         return AjaxResult.success("退出登录成功");
     }
 }

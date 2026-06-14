@@ -7,12 +7,11 @@ import com.xyx.trade.user.service.UserService;
 import com.xyx.trade.user.util.AjaxResult;
 import com.xyx.trade.user.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-/**
- * 用户 Service 实现类
- */
+@Slf4j
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Autowired
@@ -158,7 +157,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 return AjaxResult.error("学号已存在");
             }
             // 其他异常
-            return AjaxResult.error("修改失败：" + e.getMessage());
+            log.warn("修改用户信息失败", e);
+            return AjaxResult.error("修改失败");
         }
     }
 
@@ -250,7 +250,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             baseMapper.updateById(user);
             return AjaxResult.success("密码修改成功");
         } catch (Exception e) {
-            return AjaxResult.error("密码修改失败：" + e.getMessage());
+            log.warn("密码修改失败", e);
+            return AjaxResult.error("密码修改失败");
         }
     }
 }

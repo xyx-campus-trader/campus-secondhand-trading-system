@@ -6,11 +6,13 @@ import com.xyx.trade.product.mapper.CategoryMapper;
 import com.xyx.trade.product.service.CategoryService;
 import com.xyx.trade.user.exception.ServiceException;
 import com.xyx.trade.user.util.AjaxResult;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
@@ -60,7 +62,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             categoryMapper.insert(category);
             return AjaxResult.success("分类添加成功", category.getId());
         } catch (Exception e) {
-            return AjaxResult.error("分类添加失败：" + e.getMessage());
+            log.warn("分类添加失败", e);
+            return AjaxResult.error("分类添加失败");
         }
     }
 
@@ -82,7 +85,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             categoryMapper.updateById(category);
             return AjaxResult.success("分类更新成功");
         } catch (Exception e) {
-            return AjaxResult.error("分类更新失败：" + e.getMessage());
+            log.warn("分类更新失败", e);
+            return AjaxResult.error("分类更新失败");
         }
     }
 
@@ -105,7 +109,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             categoryMapper.deleteById(id);
             return AjaxResult.success("分类删除成功");
         } catch (Exception e) {
-            return AjaxResult.error("分类删除失败：" + e.getMessage());
+            log.warn("分类删除失败", e);
+            return AjaxResult.error("分类删除失败");
         }
     }
 }

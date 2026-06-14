@@ -132,8 +132,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new ServiceException("无权操作此订单");
         }
 
-        // 只有非终态订单（非已完成、非已取消）才能操作
-        if (order.getStatus() == 3 || order.getStatus() == 4) {
+        // 只有待收货(2)状态才能确认收货
+        if (order.getStatus() != 2) {
             throw new ServiceException("订单当前状态不可确认收货");
         }
 

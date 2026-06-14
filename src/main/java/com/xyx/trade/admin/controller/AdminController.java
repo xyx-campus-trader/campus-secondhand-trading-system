@@ -17,6 +17,7 @@ import com.xyx.trade.user.service.UserService;
 import com.xyx.trade.user.util.AjaxResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Api(tags = "管理员接口")
 @RestController
 @RequestMapping("/api/admin")
@@ -137,7 +139,8 @@ public class AdminController {
             userService.removeById(id);
             return AjaxResult.success("用户删除成功");
         } catch (Exception e) {
-            return AjaxResult.error("用户删除失败：" + e.getMessage());
+            log.warn("用户删除失败", e);
+            return AjaxResult.error("用户删除失败");
         }
     }
 
@@ -155,7 +158,8 @@ public class AdminController {
             }
             return AjaxResult.success(user);
         } catch (Exception e) {
-            return AjaxResult.error("获取用户信息失败：" + e.getMessage());
+            log.warn("获取用户信息失败", e);
+            return AjaxResult.error("获取用户信息失败");
         }
     }
 
@@ -195,7 +199,8 @@ public class AdminController {
             userService.updateById(user);
             return AjaxResult.success("更新成功");
         } catch (Exception e) {
-            return AjaxResult.error("更新失败：" + e.getMessage());
+            log.warn("更新失败", e);
+            return AjaxResult.error("更新失败");
         }
     }
 
@@ -238,7 +243,8 @@ public class AdminController {
             userService.save(user);
             return AjaxResult.success("添加成功");
         } catch (Exception e) {
-            return AjaxResult.error("添加失败：" + e.getMessage());
+            log.warn("添加失败", e);
+            return AjaxResult.error("添加失败");
         }
     }
 
@@ -352,19 +358,33 @@ public class AdminController {
             
             productService.updateProduct(product);
             
-            // 清除商品列表缓存
+            // 清除商品列表缓存（使用 SCAN 替代 KEYS，避免阻塞 Redis）
             try {
-                java.util.Set<String> keys = redisTemplate.keys("admin:product:list:*");
-                if (keys != null && !keys.isEmpty()) {
-                    redisTemplate.delete(keys);
-                }
+                redisTemplate.execute((org.springframework.data.redis.connection.RedisConnection conn) -> {
+                    try (var cursor = conn.keyCommands().scan(
+                            org.springframework.data.redis.core.ScanOptions.scanOptions()
+                                    .match("admin:product:list:*")
+                                    .count(100)
+                                    .build())) {
+                        while (cursor.hasNext()) {
+                            byte[] key = cursor.next();
+                            if (key != null) {
+                                conn.keyCommands().del(key);
+                            }
+                        }
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                    return null;
+                });
             } catch (Exception cacheEx) {
                 // 缓存清除失败不影响主业务
             }
             
             return AjaxResult.success("商品更新成功");
         } catch (Exception e) {
-            return AjaxResult.error("商品更新失败：" + e.getMessage());
+            log.warn("商品更新失败", e);
+            return AjaxResult.error("商品更新失败");
         }
     }
 
@@ -508,7 +528,8 @@ public class AdminController {
             return AjaxResult.success(result);
         } catch (Exception e) {
             e.printStackTrace();
-            return AjaxResult.error("获取收藏列表失败：" + e.getMessage());
+            log.warn("获取收藏列表失败", e);
+            return AjaxResult.error("获取收藏列表失败");
         }
     }
 
@@ -519,7 +540,8 @@ public class AdminController {
             favoriteService.removeById(id);
             return AjaxResult.success("收藏删除成功");
         } catch (Exception e) {
-            return AjaxResult.error("收藏删除失败：" + e.getMessage());
+            log.warn("收藏删除失败", e);
+            return AjaxResult.error("收藏删除失败");
         }
     }
 }

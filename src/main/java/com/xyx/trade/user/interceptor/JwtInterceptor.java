@@ -9,15 +9,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-/**
- * JWT 拦截器
- */
 @Slf4j
 @Component
 public class JwtInterceptor implements HandlerInterceptor {
@@ -27,15 +25,16 @@ public class JwtInterceptor implements HandlerInterceptor {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
-        // 允许OPTIONS请求通过，用于处理跨域预检请求
         if ("OPTIONS".equals(request.getMethod())) {
             return true;
         }
 
-        // 获取Authorization头
         String authorization = request.getHeader("Authorization");
         if (authorization == null) {
             response.setContentType("application/json;charset=utf-8");
@@ -45,13 +44,11 @@ public class JwtInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 提取token
         String token = authorization;
         if (authorization.startsWith("Bearer ")) {
             token = authorization.substring(7);
         }
 
-        // 验证 token
         boolean isValid = jwtUtils.validateToken(token);
         if (!isValid) {
             log.warn("JWT token无效或已过期");
@@ -61,10 +58,9 @@ public class JwtInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 从 token 中解析用户信息并校验状态
         try {
             Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(jwtUtils.getSecretKey())
+                    .setSigningKey(jwtUtils.getKey())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -73,7 +69,16 @@ public class JwtInterceptor implements HandlerInterceptor {
             String role = claims.get("role", String.class);
             String username = claims.get("username", String.class);
 
-            // 从数据库查询用户信息，校验用户状态
+            // 黑名单检查：已登出的 Token 不可再用
+            String blacklisted = stringRedisTemplate.opsForValue().get("blacklist:token:" + userId);
+            if (blacklisted != null) {
+                log.warn("Token已被登出加入黑名单, userId={}", userId);
+                response.setContentType("application/json;charset=utf-8");
+                response.setStatus(401);
+                response.getWriter().write(new ObjectMapper().writeValueAsString(AjaxResult.error(401, "token 已失效，请重新登录")));
+                return false;
+            }
+
             User user = userService.getUserById(userId);
             if (user == null) {
                 log.warn("JWT验证失败：用户不存在，userId={}", userId);
@@ -91,7 +96,6 @@ public class JwtInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            // 用用户名判断角色，确保管理员角色正确
             if ("admin".equals(username)) {
                 role = "ADMIN";
             }
@@ -100,7 +104,6 @@ public class JwtInterceptor implements HandlerInterceptor {
             request.setAttribute("role", role);
             request.setAttribute("username", username);
 
-            // 管理员接口权限拦截（双重保险）
             if (request.getRequestURI().startsWith("/api/admin")) {
                 if (!"ADMIN".equals(role)) {
                     log.warn("管理员接口无权限访问 → userId={}, username={}, role={}, uri={}", userId, username, role, request.getRequestURI());

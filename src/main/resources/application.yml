@@ -24,8 +24,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/xyx_campus_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf-8
-    username: root
-    password: 123456
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
 
   # Redis 配置
   redis:
@@ -58,6 +58,11 @@ mybatis-plus:
       logic-delete-field: is_deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET:c2VjcmV0X2tleV9mb3JfY2FtcHVzX3NlY3JldF93aXRoX2Jhc2U2NF9lbmNvZGluZ190aGlzX2lzX2EgbG9uZ2VyIGtleQ==}
+  expiration: 604800
 
 # 日志配置
 logging:
