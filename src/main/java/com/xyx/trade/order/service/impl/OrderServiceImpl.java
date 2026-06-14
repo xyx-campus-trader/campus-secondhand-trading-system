@@ -11,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.scheduling.annotation.Scheduled;
+
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -116,12 +119,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     /**
-     * 确认收货（完成订单）
+     * 确认收货（完成订单，SELECT FOR UPDATE 防止并发）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean completeOrder(Long orderId, Long userId) {
-        Order order = baseMapper.selectById(orderId);
+        Order order = baseMapper.selectByIdForUpdate(orderId);
         if (order == null) {
             throw new ServiceException("订单不存在");
         }
@@ -137,7 +140,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 修改订单为已完成状态
         int rows = baseMapper.completeOrder(orderId, 3);
         if (rows > 0) {
-            // 核心逻辑：订单完成意味着商品物理权属转移，将商品标记为"已售出"
+            // 订单完成意味着商品物理权属转移，将商品标记为已售出
             productMapper.updateStatus(order.getProductId(), 2);
             return true;
         }
@@ -153,12 +156,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     /**
-     * 模拟支付逻辑
+     * 模拟支付逻辑（SELECT FOR UPDATE 悲观锁防止并发状态错乱）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean payOrder(Long orderId, Long userId) {
-        Order order = baseMapper.selectById(orderId);
+        // FOR UPDATE 锁定订单行，防止并发支付/取消/收货
+        Order order = baseMapper.selectByIdForUpdate(orderId);
         if (order == null) {
             throw new ServiceException("订单不存在");
         }
@@ -170,25 +174,48 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new ServiceException("订单当前状态不可支付");
         }
 
-        // 模拟支付成功逻辑：状态变更为 1:待发货
         return baseMapper.payOrder(orderId, 1) > 0;
     }
 
     /**
-     * 更新订单状态（通用方法）
+     * 更新订单状态（管理端使用，FOR UPDATE + 状态校验 + 商品状态同步）
+     * 仅供管理员调用，状态流转需符合业务规则
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateOrderStatus(Long orderId, Integer status) {
-        return baseMapper.updateStatus(orderId, status) > 0;
+        Order order = baseMapper.selectByIdForUpdate(orderId);
+        if (order == null) {
+            throw new ServiceException("订单不存在");
+        }
+
+        // 校验状态流转合法性（与用户端保持一致）
+        int oldStatus = order.getStatus();
+        if (oldStatus == 3 || oldStatus == 4) {
+            throw new ServiceException("终态订单不可修改状态");
+        }
+
+        boolean result = baseMapper.updateStatus(orderId, status) > 0;
+        if (result) {
+            // 订单完成 → 商品标记已售出
+            if (status == 3) {
+                productMapper.updateStatus(order.getProductId(), 2);
+            }
+            // 订单取消 → 商品恢复上架
+            if (status == 4) {
+                productMapper.updateStatus(order.getProductId(), 1);
+            }
+        }
+        return result;
     }
 
     /**
-     * 取消订单（买家主动行为）
+     * 取消订单（买家主动行为，SELECT FOR UPDATE 防止并发）
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelOrder(Long orderId, String reason, Long userId) {
-        Order order = baseMapper.selectById(orderId);
+        Order order = baseMapper.selectByIdForUpdate(orderId);
         if (order == null) {
             throw new ServiceException("订单不存在");
         }
@@ -236,6 +263,42 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public java.math.BigDecimal sumTodayAmount() {
         return baseMapper.sumTodayAmount();
+    }
+
+    /**
+     * 定时扫描超时未付订单，每分钟执行一次。
+     * 超过 30 分钟未支付的待付款订单将被自动取消，商品恢复上架。
+     */
+    @Scheduled(fixedDelay = 60000)
+    public void cancelExpiredOrders() {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, -30);
+        Date deadline = cal.getTime();
+
+        List<Order> expired = baseMapper.selectUnpaidBefore(deadline);
+        if (expired.isEmpty()) {
+            return;
+        }
+
+        log.info("发现 {} 个超时未付订单，开始自动取消", expired.size());
+        for (Order o : expired) {
+            try {
+                autoCancelOrder(o);
+            } catch (Exception e) {
+                log.error("自动取消订单失败, orderId={}, orderNo={}", o.getId(), o.getOrderNo(), e);
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void autoCancelOrder(Order order) {
+        Order locked = baseMapper.selectByIdForUpdate(order.getId());
+        if (locked == null || locked.getStatus() != 0) {
+            return;
+        }
+        baseMapper.cancelOrder(locked.getId(), "超时未支付，系统自动取消");
+        productMapper.updateStatus(locked.getProductId(), 1);
+        log.info("超时订单自动取消成功, orderId={}, productId={}", locked.getId(), locked.getProductId());
     }
 
     /**

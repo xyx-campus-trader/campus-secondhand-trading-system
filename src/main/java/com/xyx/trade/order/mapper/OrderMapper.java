@@ -13,6 +13,9 @@ public interface OrderMapper extends BaseMapper<Order> {
     @Select("SELECT * FROM `xyx_order` WHERE id = #{id}")
     Order selectById(Long id);
 
+    @Select("SELECT * FROM `xyx_order` WHERE id = #{id} FOR UPDATE")
+    Order selectByIdForUpdate(Long id);
+
     @Select("SELECT * FROM `xyx_order` WHERE order_no = #{orderNo}")
     Order selectByOrderNo(String orderNo);
 
@@ -46,8 +49,11 @@ public interface OrderMapper extends BaseMapper<Order> {
     @Update("UPDATE `xyx_order` SET status = #{status} WHERE id = #{id}")
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
-    @Update("UPDATE `xyx_order` SET status = 4, cancel_reason = #{reason} WHERE id = #{orderId}")
+    @Update("UPDATE `xyx_order` SET status = 4, cancel_reason = #{reason}, cancel_time = NOW() WHERE id = #{orderId}")
     int cancelOrder(@Param("orderId") Long orderId, @Param("reason") String reason);
+
+    @Select("SELECT * FROM `xyx_order` WHERE status = 0 AND create_time < #{deadline}")
+    List<Order> selectUnpaidBefore(@Param("deadline") Date deadline);
 
     @Update("UPDATE `xyx_order` SET status = 3 WHERE id = #{orderId}")
     int completeOrder(@Param("orderId") Long orderId, @Param("status") int status);

@@ -89,5 +89,11 @@ public interface OrderService {
      * 统计今日销售额
      */
     java.math.BigDecimal sumTodayAmount();
+
+    /**
+     * 取消超时未支付的订单（定时任务调用）
+     * 超过30分钟未支付的待付款订单将被自动取消，商品恢复上架
+     */
+    void cancelExpiredOrders();
 }
 
