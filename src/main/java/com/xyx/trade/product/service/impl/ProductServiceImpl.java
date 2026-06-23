@@ -51,7 +51,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     // HGETALL product:category:stats         拿全部分类统计
     private static final String CATEGORY_STATS_KEY = "product:category:stats";
 
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("price", "createTime");
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("price", "createTime", "view_count", "like_count");
 
     @Override
     public Long createProduct(Product product) {

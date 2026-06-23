@@ -30,6 +30,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Autowired
     private ProductMapper productMapper;
 
+    /** 每种操作允许的订单状态 */
+    private static final List<Integer> PAY_ALLOWED       = List.of(0);      // 待付款
+    private static final List<Integer> CANCEL_ALLOWED    = List.of(0, 1);   // 待付款、待发货
+    private static final List<Integer> COMPLETE_ALLOWED  = List.of(2);      // 待收货
+
     /**
      * 创建订单流程
      */
@@ -133,7 +138,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
 
         // 只有待收货(2)状态才能确认收货
-        if (order.getStatus() != 2) {
+        if (!COMPLETE_ALLOWED.contains(order.getStatus())) {
             throw new ServiceException("订单当前状态不可确认收货");
         }
 
@@ -170,7 +175,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (!order.getBuyerId().equals(userId)) {
             throw new ServiceException("无权操作此订单");
         }
-        if (order.getStatus() != 0) {
+        if (!PAY_ALLOWED.contains(order.getStatus())) {
             throw new ServiceException("订单当前状态不可支付");
         }
 
@@ -226,7 +231,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
 
         // 状态检查：仅待付款 (0) 或待发货 (1) 时允许取消
-        if (order.getStatus() != 0 && order.getStatus() != 1) {
+        if (!CANCEL_ALLOWED.contains(order.getStatus())) {
             throw new ServiceException("当前订单状态不允许取消");
         }
 
