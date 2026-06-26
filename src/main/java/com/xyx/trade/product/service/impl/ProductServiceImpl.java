@@ -11,15 +11,19 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> implements ProductService {
 
@@ -68,8 +72,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     public boolean updateProduct(Product product) {
         boolean rows = baseMapper.updateById(product) > 0;
         if (rows) {
-            String key = PRODUCT_INFO_PREFIX + product.getId();
-            redisTemplate.delete(key);
+            deleteCacheWithRetry(PRODUCT_INFO_PREFIX + product.getId());
         }
         return rows;
     }
@@ -79,11 +82,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         Product product = baseMapper.selectById(id);
         boolean rows = baseMapper.deleteById(id) > 0;
         if (rows) {
-            String key = PRODUCT_INFO_PREFIX + id;
-            redisTemplate.delete(key);
-            // ZSet：移除商品浏览量记录
+            deleteCacheWithRetry(PRODUCT_INFO_PREFIX + id);
             redisTemplate.opsForZSet().remove(PRODUCT_VIEWS_RANK, id.toString());
-            // Hash：分类商品数 -1
             if (product != null && product.getCategoryId() != null) {
                 redisTemplate.opsForHash().increment(CATEGORY_STATS_KEY,
                         product.getCategoryId().toString(), -1);
@@ -308,12 +308,33 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setStatus(status);
         boolean result = baseMapper.updateById(product) > 0;
         if (result) {
-            // 清除商品详情缓存
-            String infoKey = PRODUCT_INFO_PREFIX + id;
-            redisTemplate.delete(infoKey);
+            deleteCacheWithRetry(PRODUCT_INFO_PREFIX + id);
             // 列表缓存暂不主动清除，依赖 TTL 过期淘汰（避免 KEYS 命令阻塞 Redis）
         }
         return result;
+    }
+
+    private void deleteCacheWithRetry(String key) {
+        Boolean deleted = redisTemplate.delete(key);
+        if (Boolean.TRUE.equals(deleted)) {
+            return;
+        }
+        CompletableFuture.runAsync(() -> {
+            long[] delays = {200, 500, 1000};
+            for (int i = 0; i < delays.length; i++) {
+                try {
+                    Thread.sleep(delays[i]);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+                if (Boolean.TRUE.equals(redisTemplate.delete(key))) {
+                    log.info("缓存重试删除成功, key={}, 第{}次", key, i + 1);
+                    return;
+                }
+            }
+            log.error("缓存重试删除失败, key={}", key);
+        });
     }
 
     // ==================== Set：用户收藏 ====================
